@@ -48,6 +48,9 @@ class PPO:
 		# self.act_dim = env.action_space[0].shape[0]
 		self.act_dim = env.action_space[0].n # is 4 now
 
+		# print('obs dim ', self.obs_dim)
+		# print('act_dim', self.act_dim)
+
 		# Initialize actor and critic networks
 		# converted to have one for each agent 
 		self.actor = policy_class(self.obs_dim, self.act_dim)                                                   # ALG STEP 1
@@ -165,6 +168,11 @@ class PPO:
 
 				# Log actor loss
 				self.logger[f'actor_losses'].append(actor_loss.detach())
+
+				# Save our model if it's time
+				# for testing purposes
+				torch.save(self.actor.state_dict(), './ppo_actor.pth')
+				torch.save(self.critic.state_dict(), './ppo_critic.pth')
 
 			# Print a summary of our training so far
 			self._log_summary()
