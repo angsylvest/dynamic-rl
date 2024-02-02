@@ -1,0 +1,9 @@
+# Ignore files with .pyc extension
+*.pyc
+
+# Ignore files with .log extension
+*.log
+
+# Ignore all files in the "data" directory
+checkpoints/
+
