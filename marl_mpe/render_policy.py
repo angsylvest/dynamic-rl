@@ -52,6 +52,13 @@ def update(frame):
     # Update the plot
     im.set_array(screen)
 
+
+    # Handle episode completion by resetting the environment
+    if all(dones):
+        next_states, _ = env.reset()
+    else:
+        next_states = next_state
+
     return im,
 
 # Set up the animation with a fixed number of frames
