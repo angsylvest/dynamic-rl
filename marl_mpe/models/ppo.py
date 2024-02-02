@@ -30,9 +30,6 @@ class PPO:
 			Returns:
 				None
 		"""
-		# Make sure the environment is compatible with our code
-		# assert(type(env.observation_space) == gym.spaces.Box)
-		# assert(type(env.action_space) == gym.spaces.Box)
 
 		print(f'ppo env info: {type(env.observation_space[0])} and act space: {type(env.action_space[0])}')
 		assert(type(env.observation_space[0]) == gym.spaces.dict.Dict)
@@ -53,14 +50,14 @@ class PPO:
 
 		# Initialize actor and critic networks
 		# converted to have one for each agent 
-		self.actor = policy_class(self.obs_dim, self.act_dim)                                                   # ALG STEP 1
-		self.critic = policy_class(self.obs_dim, 1)
+		# self.actor = policy_class(self.obs_dim, self.act_dim)                                                   # ALG STEP 1
+		# self.critic = policy_class(self.obs_dim, 1)
 
-		# Initialize optimizers for actor and critic
-		self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
-		self.critic_optim = Adam(self.critic.parameters(), lr=self.lr)
+		# # Initialize optimizers for actor and critic
+		# self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
+		# self.critic_optim = Adam(self.critic.parameters(), lr=self.lr)
 
-		# separate each by agent
+		# separate each by agent (IPPO, will allow for async updates)
 		self.num_agents = num_agents 
 		self.actors = [policy_class(self.obs_dim, self.act_dim) for i in range(self.num_agents)]
 		self.critics = [policy_class(self.obs_dim, 1) for i in range(self.num_agents)]
@@ -118,7 +115,7 @@ class PPO:
 				print(f'lens of rel batch info \n batch_obs: {batch_obs[i].shape} \n batch_acts: {batch_acts[i].shape} \n batch_rtgs {batch_rtgs[i].shape} \n  for agent {i}')
 
 				# Calculate advantage at k-th iteration
-				V, _ = self.evaluate(batch_obs[i], batch_acts[i], batch_rtgs[i])
+				V, _ = self.evaluate(batch_obs[i], batch_acts[i], batch_rtgs[i], i)
 				A_k = batch_rtgs[i] - V.detach()                                                                       # ALG STEP 5
 
 				# One of the only tricks I use that isn't in the pseudocode. Normalizing advantages
@@ -130,7 +127,7 @@ class PPO:
 				# This is the loop where we update our network for some n epochs
 				for _ in range(self.n_updates_per_iteration):                                                       # ALG STEP 6 & 7
 					# Calculate V_phi and pi_theta(a_t | s_t)
-					V, curr_log_probs = self.evaluate(batch_obs[i], batch_acts[i], batch_rtgs[i])
+					V, curr_log_probs = self.evaluate(batch_obs[i], batch_acts[i], batch_rtgs[i],i)
 
 					# Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
 					# NOTE: we just subtract the logs, which is the same as
@@ -171,16 +168,19 @@ class PPO:
 
 				# Save our model if it's time
 				# for testing purposes
-				torch.save(self.actor.state_dict(), './ppo_actor.pth')
-				torch.save(self.critic.state_dict(), './ppo_critic.pth')
+				# torch.save(self.actor.state_dict(), f'./checkpoints/ppo_actor_{i_so_far}_agent_{i}.pth')
+				# torch.save(self.critic.state_dict(), f'./checkpints/ppo_critic_{i_so_far}_agent_{i}.pth')
 
-			# Print a summary of our training so far
-			self._log_summary()
+				# Print a summary of our training so far
+				self._log_summary()
 
-			# Save our model if it's time
-			if i_so_far % self.save_freq == 0:
-				torch.save(self.actor.state_dict(), './ppo_actor.pth')
-				torch.save(self.critic.state_dict(), './ppo_critic.pth')
+				# Save our model if it's time
+				if i_so_far % self.save_freq == 0:
+					print('saving current checkpoint')
+					# torch.save(self.actor.state_dict(), './ppo_actor.pth')
+					# torch.save(self.critic.state_dict(), './ppo_critic.pth')
+					torch.save(self.actors[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_{i_so_far}_agent_{i}.pth')
+					torch.save(self.critics[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_critic_{i_so_far}_agent_{i}.pth')
 
 	def rollout(self):
 		"""
@@ -206,7 +206,7 @@ class PPO:
 		batch_rtgs = {}
 		batch_lens = []
 
-		# Batch data. For more details, check function header.
+		# info per agent in batch (represented as an array)
 		for i in range(self.num_agents): 
 			batch_obs[i] = []
 			batch_acts[i] = []
@@ -231,9 +231,10 @@ class PPO:
 			# print(f'initial ep_rews: {ep_rews}')
 
 			# Reset the environment. sNote that obs is short for observation. 
-			obs, _ = self.env.reset() # is a list of agents, each is a dict
+			obs, _ = self.env.reset() # is a list of agents, each is a dict of obs + info
 			# print(f'obs after env reset {obs}')
-			done = False
+
+			# each index is val for epi for each agent 
 			dones = []
 			actions = []
 			log_probs = []
@@ -249,14 +250,11 @@ class PPO:
 
 				t += 1 # Increment timesteps ran this batch so far
 
-				# Track observations in this batch
-				# batch_obs.append(obs)
+				# for each agent, append current obs in respective dict 
 				for i in range(self.num_agents): 
 					batch_obs[i].append(obs[i]["agent"])
 
-
 				# Calculate action and make a step in the env. 
-				# Note that rew is short for reward.
 				for i in range(self.num_agents): 
 					# ob = obs[i]["agent"]
 					# print(f'current obs: {ob} for agent {i}')
@@ -272,8 +270,7 @@ class PPO:
 
 				# Track recent reward, action, and action log probability
 				for i in range(self.num_agents): 
-					# print('for', i, ep_rews[i], rews[i])
-					# ep_rews[i] = ep_rews[i].append(rews[i])
+					# for each agent dict, add rews collected for that episode 
 					ep_rews[i].append(rews[i])
 					# batch_rews[i].extend(ep_rews[i])
 
@@ -301,13 +298,11 @@ class PPO:
 		# batch_log_probs = torch.tensor(batch_log_probs, dtype=torch.float).flatten()
 		# batch_rtgs = self.compute_rtgs(batch_rews)                                                              # ALG STEP 4
 
+		# convert each obs per agent into tensor 
 		for i in range(self.num_agents):
 			batch_obs[i] = torch.tensor(batch_obs[i], dtype=torch.float)
-
 			batch_acts[i] = torch.tensor(batch_acts[i], dtype=torch.float)
-
 			batch_log_probs[i] = torch.tensor(batch_log_probs[i], dtype=torch.float).flatten()
-
 			batch_rtgs[i] = self.compute_rtgs(batch_rews[i])
 
 		# Now, batch_obs, batch_acts, and batch_log_probs are dictionaries with tensor values
@@ -384,7 +379,7 @@ class PPO:
 		# Return the sampled action and the log probability of that action in our distribution
 		return action.detach().numpy(), log_prob.detach()
 
-	def evaluate(self, batch_obs, batch_acts, batch_rtgs):
+	def evaluate(self, batch_obs, batch_acts, batch_rtgs, agent_id):
 		"""
 			Estimate the values of each observation, and the log probs of
 			each action in the most recent batch with the most recent
@@ -399,11 +394,13 @@ class PPO:
 								batch as a tensor. Shape: (number of timesteps in batch)
 		"""
 		# Query critic network for a value V for each batch_obs. Shape of V should be same as batch_rtgs
-		V = self.critic(batch_obs).squeeze()
+		V = self.critics[agent_id](batch_obs).squeeze()
+		# V = self.critic(batch_obs).squeeze()
 
 		# Calculate the log probabilities of batch actions using most recent actor network.
 		# This segment of code is similar to that in get_action()
-		mean = self.actor(batch_obs)
+		# mean = self.actor(batch_obs)
+		mean = self.actors[agent_id](batch_obs)
 		# dist = MultivariateNormal(mean, self.cov_mat)
 		dist = torch.distributions.Categorical(logits=mean)
 		log_probs = dist.log_prob(batch_acts)

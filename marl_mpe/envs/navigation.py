@@ -18,6 +18,12 @@ class GridWorldEnv(gym.Env):
 
         self.num_agents = num_agents
 
+        # reward info
+        self.collision_radius_threshold = 2.0
+        self.collision_penalty = 1.0
+        self.proximity_reward = 0.5
+        self.goal_reward = 1.0
+
         self.action_space = [
             spaces.Discrete(4) for _ in range(self.num_agents)
         ]
@@ -125,6 +131,32 @@ class GridWorldEnv(gym.Env):
             self._render_frame()
 
         return observation, info # by default will return all data 
+    
+    def reward(self, agent_id): 
+        current_loc = np.array(self.agent_obs_info[agent_id]["agent"])
+        target = np.array(self.agent_obs_info[agent_id]["target"])
+
+        # Calculate distance to the goal
+        distance_to_goal = np.linalg.norm(current_loc - target)
+
+        # Check for collisions with other agents
+        collision_penalty_sum = 0.0
+
+        for i in range(self.num_agents):
+            if i != agent_id:
+                other_agent_loc = np.array(self.agent_obs_info[i]["agent"])
+                distance_to_other_agent = np.linalg.norm(current_loc - other_agent_loc)
+
+                # If the distance is below a threshold, penalize for collision
+                if distance_to_other_agent < self.collision_radius_threshold:
+                    collision_penalty_sum += self.collision_penalty
+
+        # Calculate the total reward
+        total_reward = self.goal_reward - collision_penalty_sum + self.proximity_reward / (distance_to_goal + 1e-6)
+
+        return total_reward
+
+        
 
 
     def step(self, actions):
@@ -169,13 +201,13 @@ class GridWorldEnv(gym.Env):
             # Update the observation_space
             self.agent_obs_info[agent_id]["agent"] = np.array([clipped_x, clipped_y])
 
-            current_reward = 1 # TODO: update reward function
+            current_reward = self.reward(agent_id) # TODO: update reward function
 
             terminated_agent = np.array_equal(
                 self.agent_obs_info[agent_id]["agent"] , self.agent_obs_info[agent_id]["target"]
             )
 
-            # terminated.append(terminated_agent)
+            terminated.append(terminated_agent)
             # reward = 1 if terminated_agent else 0 # simple reward, doesn't use ttc or collision 
             rewards.append(current_reward)
             observation = self._get_obs(agent_id)
@@ -187,7 +219,7 @@ class GridWorldEnv(gym.Env):
             self._render_frame()
 
         # Assuming your environment considers an episode terminated if any agent reaches the target
-        episode_terminated = any(terminated)
+        episode_terminated = all(terminated)
 
         return observations, rewards, episode_terminated, {}, infos
     
