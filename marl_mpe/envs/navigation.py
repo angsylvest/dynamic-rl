@@ -114,12 +114,6 @@ class GridWorldEnv(gym.Env):
                     0, self.size, size=2, dtype=int
                 )
 
-            # Create valid samples within the space
-            # agent_location = self.observation_spaces[i]["agent"].sample()
-            # target_location = self.observation_spaces[i]["target"].sample()
-
-            # print(f'agent location: {agent_location} with target location: {target_location}')
-
             self.agent_obs_info[i]["agent"] = agent_location
             self.agent_obs_info[i]["target"] = target_location
 
@@ -160,23 +154,6 @@ class GridWorldEnv(gym.Env):
 
 
     def step(self, actions):
-        # assert index is not None
-        # # Map the action (element of {0,1,2,3}) to the direction we walk in
-        # direction = self._action_to_direction[action]
-        # # We use `np.clip` to make sure we don't leave the grid
-        # self._agent_location = np.clip(
-        #     self._agent_location + direction, 0, self.size - 1
-        # )
-        # # An episode is done iff the agent has reached the target
-        # terminated = np.array_equal(self._agent_location, self.agent_obs_info[index]["target"])
-        # reward = 1 if terminated else 0  # Binary sparse rewards
-        # observation = self._get_obs(index)
-        # info = self._get_info(index)
-
-        # if self.render_mode == "human":
-        #     self._render_frame()
-
-        # return observation, reward, terminated, False, info
     
         rewards = []
         observations = []
