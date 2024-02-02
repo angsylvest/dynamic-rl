@@ -13,6 +13,7 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.distributions import MultivariateNormal
+import matplotlib.pyplot as plt
 
 class PPO:
 	"""
@@ -92,6 +93,26 @@ class PPO:
 		"""
 		print(f"Learning... Running {self.max_timesteps_per_episode} timesteps per episode, ", end='')
 		print(f"{self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps")
+		
+		# Initialize the Matplotlib plot
+		plt.ion()  # Turn on interactive mode
+		# Create a figure with two subplots
+		fig, (ax_total, ax_agents) = plt.subplots(2, 1)
+		line_total, = ax_total.plot([], [], label='Total Average Episodic Return')
+		ax_total.set_xlabel('Iterations')
+		ax_total.set_ylabel('Total Average Episodic Return')
+		ax_total.legend()
+
+		agent_lines = {}
+		for agent_id in range(self.num_agents):
+			line, = ax_agents.plot([], [], label=f'Agent {agent_id} Average Episodic Return')
+			agent_lines[agent_id] = line
+
+		ax_agents.set_xlabel('Iterations')
+		ax_agents.set_ylabel('Agent Average Reward')
+		ax_agents.legend()
+		
+		
 		t_so_far = 0 # Timesteps simulated so far
 		i_so_far = 0 # Iterations ran so far
 		while t_so_far < total_timesteps:                                                                       # ALG STEP 2
@@ -168,21 +189,49 @@ class PPO:
 				# Log actor loss
 				self.logger[f'actor_losses'].append(actor_loss.detach())
 
-				# Save our model if it's time
-				# for testing purposes
-				# torch.save(self.actor.state_dict(), f'./checkpoints/ppo_actor_{i_so_far}_agent_{i}.pth')
-				# torch.save(self.critic.state_dict(), f'./checkpints/ppo_critic_{i_so_far}_agent_{i}.pth')
+			# Update the live plot for the total average episodic return
+				
+			plot_metrics =  {}	
+			for a in range(self.num_agents): 
+				plot_metrics[a] = 0 
+				batch_rews = self.logger['batch_rews'][a]
+				length = 0 
+				tot = 0 
+				for ep_list in batch_rews: 
+					tot += sum(ep_list)
+					length += len(ep_list)
 
-				# Print a summary of our training so far
-				self._log_summary()
+				plot_metrics[a] = tot / length
 
-				# Save our model if it's time
-				if i_so_far % self.save_freq == 0:
-					print('saving current checkpoint')
-					# torch.save(self.actor.state_dict(), './ppo_actor.pth')
-					# torch.save(self.critic.state_dict(), './ppo_critic.pth')
-					torch.save(self.actors[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_{i_so_far}_agent_{i}_type_{self.policy_type}.pth')
-					torch.save(self.critics[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_critic_{i_so_far}_agent_{i}_type_{self.policy_type}.pth')
+
+
+			# Update the live plot for the total average episodic return
+			avg_ep_rews_total = np.mean([plot_metrics[a] for a in range(self.num_agents)])
+			self._update_live_plot(ax_total, line_total, i_so_far, avg_ep_rews_total, i_so_far)
+
+			# Update the live plot for each agent's average episodic return
+			for agent_id, line in agent_lines.items():
+				avg_ep_rews_agent = plot_metrics[agent_id]
+				self._update_live_plot(ax_agents, line, i_so_far, avg_ep_rews_agent, i_so_far)
+				print(f"avg_ep_rews_agent for agent {agent_id}:", avg_ep_rews_agent)
+
+			plt.pause(0.001)
+
+			# Print a summary of our training so far
+			self._log_summary()
+
+			# Save our model if it's time
+			if i_so_far % self.save_freq == 0:
+				print('saving current checkpoint')
+				# torch.save(self.actor.state_dict(), './ppo_actor.pth')
+				# torch.save(self.critic.state_dict(), './ppo_critic.pth')
+				torch.save(self.actors[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_{i_so_far}_agent_{i}_type_{self.policy_type}.pth')
+				torch.save(self.critics[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_critic_{i_so_far}_agent_{i}_type_{self.policy_type}.pth')
+
+
+		# Close the plot after training
+		plt.ioff()
+		plt.show()
 
 	def rollout(self):
 		"""
@@ -345,6 +394,20 @@ class PPO:
 		batch_rtgs = torch.tensor(batch_rtgs, dtype=torch.float)
 
 		return batch_rtgs
+		
+	def _update_live_plot(self, ax, line, x, y, iteration):
+		if not line:
+			# If the line does not exist, create a new line
+			line, = ax.plot([], [], label='Total Average Episodic Return')
+			ax.legend()
+		# Assuming line is a Line2D object
+		line.set_xdata(np.append(line.get_xdata(), iteration))
+		line.set_ydata(np.append(line.get_ydata(), y))
+		ax.relim()  # Recalculate limits
+		ax.autoscale_view()  # Autoscale the view
+		ax.figure.canvas.draw()
+
+
 
 	def get_action(self, obs, index):
 		"""
@@ -466,7 +529,9 @@ class PPO:
 		t_so_far = self.logger['t_so_far']
 		i_so_far = self.logger['i_so_far']
 		avg_ep_lens = np.mean(self.logger['batch_lens'])
-		avg_ep_rews = np.mean([np.sum(ep_rews) for ep_rews in self.logger['batch_rews']])
+
+		# avg_ep_rews = np.mean([np.sum(reward_list) for reward_list in self.logger['batch_rews'].values()])
+		avg_ep_rews = np.mean([np.sum(episode_rewards) for episode_rewards in self.logger['batch_rews']])
 		avg_actor_loss = np.mean([losses.float().mean() for losses in self.logger['actor_losses']])
 
 		# Round decimal places for more aesthetic logging messages
