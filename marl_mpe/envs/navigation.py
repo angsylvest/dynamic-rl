@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, size=10, num_agents = 1):
+    def __init__(self, render_mode=None, size=10, num_agents = 1, obs_type = "simple pos"):
         self.size = size  # The size of the square grid
         self.window_size = 512  # The size of the PyGame window
 
@@ -17,6 +17,8 @@ class GridWorldEnv(gym.Env):
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
 
         self.num_agents = num_agents
+        self.obs_type = obs_type
+        self.introduce_time_delay = True
 
         # reward info
         self.collision_radius_threshold = 2.0
@@ -33,13 +35,16 @@ class GridWorldEnv(gym.Env):
                 {
                     "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
                     "target": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+                    "remaining_steps": spaces.Box(0, size - 1, shape=(2,), dtype=int),
                 }
         ) for _ in range(self.num_agents)
         ]
 
         self.agent_obs_info = [
             {"agent": np.array([0,0]), 
-             "target": np.array([0,0])}
+             "target": np.array([0,0]),
+             "remaining_steps": np.array([-1])
+             }
 
              for i in range(self.num_agents)
 
@@ -163,20 +168,40 @@ class GridWorldEnv(gym.Env):
         # print(f'actions: {actions}')
 
         for agent_id, action in enumerate(actions):
-            direction = self._action_to_direction[action]
-            # print(f'self.agent_obs_info: {self.agent_obs_info} for agent_id {agent_id}')
-            loc = self.agent_obs_info[agent_id]["agent"]
 
-            # Calculate new x and y values
-            new_x = loc[0] + direction[0]
-            new_y = loc[1] + direction[1]
+            if not self.introduce_time_delay or ((self.agent_obs_info[agent_id]["remaining_steps"] < 0) and self.introduce_time_delay):
+ 
+                direction = self._action_to_direction[action]
+                # print(f'self.agent_obs_info: {self.agent_obs_info} for agent_id {agent_id}')
+                loc = self.agent_obs_info[agent_id]["agent"]
 
-            # Clip the values to be within the desired range
-            clipped_x = np.clip(new_x, 0, self.size - 1)
-            clipped_y = np.clip(new_y, 0, self.size - 1)
+                # Calculate new x and y values
+                new_x = loc[0] + direction[0]
+                new_y = loc[1] + direction[1]
 
-            # Update the observation_space
-            self.agent_obs_info[agent_id]["agent"] = np.array([clipped_x, clipped_y])
+                # Clip the values to be within the desired range
+                clipped_x = np.clip(new_x, 0, self.size - 1)
+                clipped_y = np.clip(new_y, 0, self.size - 1)
+
+                # Update the observation_space
+                self.agent_obs_info[agent_id]["agent"] = np.array([clipped_x, clipped_y])
+
+                # current_reward = self.reward(agent_id) # TODO: update reward function
+
+                # terminated_agent = np.array_equal(
+                #     self.agent_obs_info[agent_id]["agent"] , self.agent_obs_info[agent_id]["target"]
+                # )
+
+                if self.introduce_time_delay:
+                    # add time delay once given new action before moving on to next action
+                    self.agent_obs_info[agent_id]["remaining_steps"] = 2
+                    # print(f'updating obs to {self.agent_obs_info[agent_id]["agent"]} with updated remaining steps')
+
+            else: 
+                # agent must remain at current state 
+                self.agent_obs_info[agent_id]["remaining_steps"] -= 1
+                # print(f'decrementing steps, current state {self.agent_obs_info[agent_id]["remaining_steps"] }')
+            
 
             current_reward = self.reward(agent_id) # TODO: update reward function
 

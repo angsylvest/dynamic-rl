@@ -54,7 +54,7 @@ def update(frame):
 
 
     # Handle episode completion by resetting the environment
-    if all(dones):
+    if dones:
         next_states, _ = env.reset()
     else:
         next_states = next_state
