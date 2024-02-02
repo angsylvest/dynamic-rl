@@ -4,12 +4,13 @@ import pygame
 import gym
 from gym import spaces
 import matplotlib.pyplot as plt
+import random 
 
 
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, size=10, num_agents = 1, obs_type = "simple pos"):
+    def __init__(self, render_mode=None, size=10, num_agents = 1, obs_type = "simple pos", time_delay = False):
         self.size = size  # The size of the square grid
         self.window_size = 512  # The size of the PyGame window
 
@@ -18,13 +19,17 @@ class GridWorldEnv(gym.Env):
 
         self.num_agents = num_agents
         self.obs_type = obs_type
-        self.introduce_time_delay = True
+        self.introduce_time_delay = time_delay
 
         # reward info
         self.collision_radius_threshold = 2.0
         self.collision_penalty = 1.0
         self.proximity_reward = 0.5
         self.goal_reward = 1.0
+
+        # Generate dark random colors for each agent
+        self.agent_colors = [(0, 0, 255), (255, 0, 0)]
+        
 
         self.action_space = [
             spaces.Discrete(4) for _ in range(self.num_agents)
@@ -230,7 +235,7 @@ class GridWorldEnv(gym.Env):
     def render(self):
         if self.render_mode == "rgb_array":
             return self._render_frame()
-
+        
     def _render_frame(self):
         if self.window is None and self.render_mode == "human":
             pygame.init()
@@ -247,28 +252,28 @@ class GridWorldEnv(gym.Env):
             self.window_size / self.size
         )  # The size of a single grid square in pixels
 
+        # Draw the targets and agents using unique colors for each agent
+        for i in range(self.num_agents):
+            target_color = self.agent_colors[i]
+            agent_color = self.agent_colors[i]
 
-        # First we draw the target(s)
-        for i in range(self.num_agents): 
             pygame.draw.rect(
                 canvas,
-                (255, 0, 0),
+                target_color,
                 pygame.Rect(
                     pix_square_size * self.agent_obs_info[i]["target"],
                     (pix_square_size, pix_square_size),
                 ),
             )
 
-        # Now we draw the agent(s)
-        for i in range(self.num_agents): 
             pygame.draw.circle(
-            canvas,
-            (0, 0, 255),
-            (self.agent_obs_info[i]["agent"] + 0.5) * pix_square_size,
-            pix_square_size / 3,
-        )
+                canvas,
+                agent_color,
+                (self.agent_obs_info[i]["agent"] + 0.5) * pix_square_size,
+                pix_square_size / 3,
+            )
 
-        # Finally, add some gridlines
+        # Draw gridlines
         for x in range(self.size + 1):
             pygame.draw.line(
                 canvas,
@@ -286,13 +291,9 @@ class GridWorldEnv(gym.Env):
             )
 
         if self.render_mode == "human":
-            # The following line copies our drawings from `canvas` to the visible window
             self.window.blit(canvas, canvas.get_rect())
             pygame.event.pump()
             pygame.display.update()
-
-            # We need to ensure that human-rendering occurs at the predefined framerate.
-            # The following line will automatically add a delay to keep the framerate stable.
             self.clock.tick(self.metadata["render_fps"])
         else:  # rgb_array
             return np.transpose(

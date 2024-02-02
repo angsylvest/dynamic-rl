@@ -85,7 +85,7 @@ def test(env, actor_model, num_agents):
     # independently as a binary file that can be loaded in with torch.
     eval_policy(policy=policy, env=env, render=True)
 
-def main(args, mode, num_agents, obs_type):
+def main(args, mode, num_agents, obs_type, time_delay):
     """
         The main function to run.
 
@@ -112,7 +112,7 @@ def main(args, mode, num_agents, obs_type):
     # Creates the environment we'll be running. If you want to replace with your own
     # custom environment, note that it must inherit Gym and have both continuous
     # observation and action spaces.
-    env = GridWorldEnv(num_agents=num_agents, obs_type = obs_type) # gym.make('Pendulum-v0')
+    env = GridWorldEnv(num_agents=num_agents, obs_type = obs_type, time_delay=time_delay) # gym.make('Pendulum-v0')
 
     # Train or test, depending on the mode specified
     if  mode == 'train':
@@ -125,5 +125,6 @@ if __name__ == '__main__':
     num_agents = 2
     obs_types = ["simple pos", "simple pos and local occupancy", "simple pos and vector occupancy"]
     obs_type = obs_types[0]
+    time_delay = False
     args = get_args() # Parse arguments from command line
-    main(args, mode, num_agents, obs_type)
+    main(args, mode, num_agents, obs_type, time_delay)
