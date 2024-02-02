@@ -18,7 +18,7 @@ class PPO:
 	"""
 		This is the PPO class we will use as our model in main.py
 	"""
-	def __init__(self, policy_class, env, num_agents, **hyperparameters):
+	def __init__(self, policy_class, env, num_agents, policy_type, **hyperparameters):
 		"""
 			Initializes the PPO model, including hyperparameters.
 
@@ -44,6 +44,8 @@ class PPO:
 		self.obs_dim = env.observation_space[0]["agent"].shape[0] # + env.observation_space[0]["target"].shape[0]
 		# self.act_dim = env.action_space[0].shape[0]
 		self.act_dim = env.action_space[0].n # is 4 now
+
+		self.policy_type = policy_type
 
 		# print('obs dim ', self.obs_dim)
 		# print('act_dim', self.act_dim)
@@ -179,8 +181,8 @@ class PPO:
 					print('saving current checkpoint')
 					# torch.save(self.actor.state_dict(), './ppo_actor.pth')
 					# torch.save(self.critic.state_dict(), './ppo_critic.pth')
-					torch.save(self.actors[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_{i_so_far}_agent_{i}.pth')
-					torch.save(self.critics[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_critic_{i_so_far}_agent_{i}.pth')
+					torch.save(self.actors[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_{i_so_far}_agent_{i}_type_{self.policy_type}.pth')
+					torch.save(self.critics[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_critic_{i_so_far}_agent_{i}_type_{self.policy_type}.pth')
 
 	def rollout(self):
 		"""

@@ -28,6 +28,7 @@ class GridWorldEnv(gym.Env):
         self.goal_reward = 1.0
 
         # Generate dark random colors for each agent
+        # TODO: make so this doesn't need to be hardcoded
         self.agent_colors = [(0, 0, 255), (255, 0, 0)]
         
 

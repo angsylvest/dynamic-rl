@@ -14,7 +14,7 @@ from eval_policy import eval_policy
 
 from envs.navigation import GridWorldEnv
 
-def train(env, hyperparameters, actor_model, critic_model, num_agents):
+def train(env, hyperparameters, actor_model, critic_model, num_agents, policy_type):
     """
         Trains the model.
 
@@ -31,7 +31,7 @@ def train(env, hyperparameters, actor_model, critic_model, num_agents):
     print(f"Training", flush=True)
 
     # Create a model for PPO (converted to IPPO)
-    model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, **hyperparameters)
+    model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, **hyperparameters)
 
     # Tries to load in an existing actor/critic model to continue training on
     for i in range(num_agents): 
@@ -85,7 +85,7 @@ def test(env, actor_model, num_agents):
     # independently as a binary file that can be loaded in with torch.
     eval_policy(policy=policy, env=env, render=True)
 
-def main(args, mode, num_agents, obs_type, time_delay):
+def main(args, mode, num_agents, obs_type, time_delay, policy_type):
     """
         The main function to run.
 
@@ -116,7 +116,7 @@ def main(args, mode, num_agents, obs_type, time_delay):
 
     # Train or test, depending on the mode specified
     if  mode == 'train':
-        train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model, num_agents = num_agents)
+        train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model, num_agents = num_agents, policy_type = policy_type)
     else:
         test(env=env, actor_model=args.actor_model, num_agents = num_agents)
 
@@ -126,5 +126,6 @@ if __name__ == '__main__':
     obs_types = ["simple pos", "simple pos and local occupancy", "simple pos and vector occupancy"]
     obs_type = obs_types[0]
     time_delay = False
+    policy_type = "simple" # just way to label policies 
     args = get_args() # Parse arguments from command line
-    main(args, mode, num_agents, obs_type, time_delay)
+    main(args, mode, num_agents, obs_type, time_delay, policy_type)
