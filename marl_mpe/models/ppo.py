@@ -115,118 +115,128 @@ class PPO:
 		
 		t_so_far = 0 # Timesteps simulated so far
 		i_so_far = 0 # Iterations ran so far
-		while t_so_far < total_timesteps:                                                                       # ALG STEP 2
-			# Autobots, roll out (just kidding, we're collecting our batch simulations here)
-			# convert batch to be a dictionary for each agent 
-			batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens = self.rollout()                     # ALG STEP 3
 
-			print('completed rollout')
-			# Calculate how many timesteps we collected this batch
-			t_so_far += np.sum(batch_lens)
+		try: 
+			while t_so_far < total_timesteps:                                                                       # ALG STEP 2
+				# Autobots, roll out (just kidding, we're collecting our batch simulations here)
+				# convert batch to be a dictionary for each agent 
+				batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens = self.rollout()                     # ALG STEP 3
 
-			# Increment the number of iterations
-			i_so_far += 1
+				print('completed rollout')
+				# Calculate how many timesteps we collected this batch
+				t_so_far += np.sum(batch_lens)
 
-			# Logging timesteps so far and iterations so far
-			self.logger['t_so_far'] = t_so_far
-			self.logger['i_so_far'] = i_so_far
+				# Increment the number of iterations
+				i_so_far += 1
 
-
-			# update process (will occur for each agent's model)
-
-			for i in range(self.num_agents): 
-				print(f'lens of rel batch info \n batch_obs: {batch_obs[i].shape} \n batch_acts: {batch_acts[i].shape} \n batch_rtgs {batch_rtgs[i].shape} \n  for agent {i}')
-
-				# Calculate advantage at k-th iteration
-				V, _ = self.evaluate(batch_obs[i], batch_acts[i], batch_rtgs[i], i)
-				A_k = batch_rtgs[i] - V.detach()                                                                       # ALG STEP 5
-
-				# One of the only tricks I use that isn't in the pseudocode. Normalizing advantages
-				# isn't theoretically necessary, but in practice it decreases the variance of 
-				# our advantages and makes convergence much more stable and faster. I added this because
-				# solving some environments was too unstable without it.
-				A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
-
-				# This is the loop where we update our network for some n epochs
-				for _ in range(self.n_updates_per_iteration):                                                       # ALG STEP 6 & 7
-					# Calculate V_phi and pi_theta(a_t | s_t)
-					V, curr_log_probs = self.evaluate(batch_obs[i], batch_acts[i], batch_rtgs[i],i)
-
-					# Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
-					# NOTE: we just subtract the logs, which is the same as
-					# dividing the values and then canceling the log with e^log.
-					# For why we use log probabilities instead of actual probabilities,
-					# here's a great explanation: 
-					# https://cs.stackexchange.com/questions/70518/why-do-we-use-the-log-in-gradient-based-reinforcement-algorithms
-					# TL;DR makes gradient descent easier behind the scenes.
-					ratios = torch.exp(curr_log_probs - batch_log_probs[i])
-
-					# Calculate surrogate losses.
-					surr1 = ratios * A_k
-					surr2 = torch.clamp(ratios, 1 - self.clip, 1 + self.clip) * A_k
-
-					# Calculate actor and critic losses.
-					# NOTE: we take the negative min of the surrogate losses because we're trying to maximize
-					# the performance function, but Adam minimizes the loss. So minimizing the negative
-					# performance function maximizes it.
-					actor_loss = (-torch.min(surr1, surr2)).mean()
-					critic_loss = nn.MSELoss()(V, batch_rtgs[i])
-
-					# Calculate gradients and perform backward propagation for actor network
-					self.actor_optims[i].zero_grad()
-					# self.actor_optim.zero_grad()
-					actor_loss.backward(retain_graph=True)
-					# self.actor_optim.step()
-					self.actor_optims[i].step()
-
-					# Calculate gradients and perform backward propagation for critic network
-					# self.critic_optim.zero_grad()
-					self.critic_optims[i].zero_grad()
-					critic_loss.backward()
-					# self.critic_optim.step()
-					self.critic_optims[i].step()
-
-				# Log actor loss
-				self.logger[f'actor_losses'].append(actor_loss.detach())
-
-			# Update the live plot for the total average episodic return
-				
-			plot_metrics =  {}	
-			for a in range(self.num_agents): 
-				plot_metrics[a] = 0 
-				batch_rews = self.logger['batch_rews'][a]
-				length = 0 
-				tot = 0 
-				for ep_list in batch_rews: 
-					tot += sum(ep_list)
-					length += len(ep_list)
-
-				plot_metrics[a] = tot / length
+				# Logging timesteps so far and iterations so far
+				self.logger['t_so_far'] = t_so_far
+				self.logger['i_so_far'] = i_so_far
 
 
+				# update process (will occur for each agent's model)
 
-			# Update the live plot for the total average episodic return
-			avg_ep_rews_total = np.mean([plot_metrics[a] for a in range(self.num_agents)])
-			self._update_live_plot(ax_total, line_total, i_so_far, avg_ep_rews_total, i_so_far)
+				for i in range(self.num_agents): 
+					print(f'lens of rel batch info \n batch_obs: {batch_obs[i].shape} \n batch_acts: {batch_acts[i].shape} \n batch_rtgs {batch_rtgs[i].shape} \n  for agent {i}')
 
-			# Update the live plot for each agent's average episodic return
-			for agent_id, line in agent_lines.items():
-				avg_ep_rews_agent = plot_metrics[agent_id]
-				self._update_live_plot(ax_agents, line, i_so_far, avg_ep_rews_agent, i_so_far)
-				print(f"avg_ep_rews_agent for agent {agent_id}:", avg_ep_rews_agent)
+					# Calculate advantage at k-th iteration
+					V, _ = self.evaluate(batch_obs[i], batch_acts[i], batch_rtgs[i], i)
+					A_k = batch_rtgs[i] - V.detach()                                                                       # ALG STEP 5
 
-			plt.pause(0.001)
+					# One of the only tricks I use that isn't in the pseudocode. Normalizing advantages
+					# isn't theoretically necessary, but in practice it decreases the variance of 
+					# our advantages and makes convergence much more stable and faster. I added this because
+					# solving some environments was too unstable without it.
+					A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
 
-			# Print a summary of our training so far
-			self._log_summary()
+					# This is the loop where we update our network for some n epochs
+					for _ in range(self.n_updates_per_iteration):                                                       # ALG STEP 6 & 7
+						# Calculate V_phi and pi_theta(a_t | s_t)
+						V, curr_log_probs = self.evaluate(batch_obs[i], batch_acts[i], batch_rtgs[i],i)
 
-			# Save our model if it's time
-			if i_so_far % self.save_freq == 0:
-				print('saving current checkpoint')
-				# torch.save(self.actor.state_dict(), './ppo_actor.pth')
-				# torch.save(self.critic.state_dict(), './ppo_critic.pth')
-				torch.save(self.actors[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_{i_so_far}_agent_{i}_type_{self.policy_type}.pth')
-				torch.save(self.critics[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_critic_{i_so_far}_agent_{i}_type_{self.policy_type}.pth')
+						# Calculate the ratio pi_theta(a_t | s_t) / pi_theta_k(a_t | s_t)
+						# NOTE: we just subtract the logs, which is the same as
+						# dividing the values and then canceling the log with e^log.
+						# For why we use log probabilities instead of actual probabilities,
+						# here's a great explanation: 
+						# https://cs.stackexchange.com/questions/70518/why-do-we-use-the-log-in-gradient-based-reinforcement-algorithms
+						# TL;DR makes gradient descent easier behind the scenes.
+						ratios = torch.exp(curr_log_probs - batch_log_probs[i])
+
+						# Calculate surrogate losses.
+						surr1 = ratios * A_k
+						surr2 = torch.clamp(ratios, 1 - self.clip, 1 + self.clip) * A_k
+
+						# Calculate actor and critic losses.
+						# NOTE: we take the negative min of the surrogate losses because we're trying to maximize
+						# the performance function, but Adam minimizes the loss. So minimizing the negative
+						# performance function maximizes it.
+						actor_loss = (-torch.min(surr1, surr2)).mean()
+						critic_loss = nn.MSELoss()(V, batch_rtgs[i])
+
+						# Calculate gradients and perform backward propagation for actor network
+						self.actor_optims[i].zero_grad()
+						# self.actor_optim.zero_grad()
+						actor_loss.backward(retain_graph=True)
+						# self.actor_optim.step()
+						self.actor_optims[i].step()
+
+						# Calculate gradients and perform backward propagation for critic network
+						# self.critic_optim.zero_grad()
+						self.critic_optims[i].zero_grad()
+						critic_loss.backward()
+						# self.critic_optim.step()
+						self.critic_optims[i].step()
+
+					# Log actor loss
+					self.logger[f'actor_losses'].append(actor_loss.detach())
+
+				# Update the live plot for the total average episodic return
+				# Update the live plot for the total average episodic return
+				# Update the live plot for the total average episodic return
+				plot_metrics = {}
+				for a in range(self.num_agents):
+					plot_metrics[a] = 0
+					batch_rews_a = self.logger['batch_rews'][a]
+					
+					total_rewards_a = sum(sum(ep_rewards) for ep_rewards in batch_rews_a)
+					total_episodes_a = sum(len(ep_rewards) for ep_rewards in batch_rews_a)
+					
+					plot_metrics[a] = total_rewards_a / total_episodes_a
+
+				# Update the live plot for the total average episodic return
+				avg_ep_rews_total = np.mean([plot_metrics[a] for a in range(self.num_agents)])
+				self._update_live_plot(ax_total, line_total, i_so_far, avg_ep_rews_total, i_so_far)
+
+				# Update the live plot for each agent's average episodic return
+				for agent_id, line in agent_lines.items():
+					avg_ep_rews_agent = plot_metrics[agent_id]
+					self._update_live_plot(ax_agents, line, i_so_far, avg_ep_rews_agent, i_so_far)
+					print(f"avg_ep_rews_agent for agent {agent_id}:", avg_ep_rews_agent)
+
+
+				plt.pause(0.001)
+
+				# Print a summary of our training so far
+				self._log_summary()
+
+				# Save our model if it's time
+				if i_so_far % self.save_freq == 0:
+					print('saving current checkpoint')
+					# torch.save(self.actor.state_dict(), './ppo_actor.pth')
+					# torch.save(self.critic.state_dict(), './ppo_critic.pth')
+					for a in range(self.num_agents): 
+						torch.save(self.actors[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_{i_so_far}_agent_{a}_type_{self.policy_type}.pth')
+						torch.save(self.critics[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_critic_{i_so_far}_agent_{a}_type_{self.policy_type}.pth')
+
+		except KeyboardInterrupt:
+			print("\nTraining interrupted. Saving current state...")
+
+			# Save dynamic graph or relevant information
+			plt.savefig('dynamic_graph_interrupted.png')  # Adjust the filename and format as needed
+			print("Dynamic graph saved.")
+
+			# Optionally save the model state here if needed
 
 
 		# Close the plot after training
@@ -358,6 +368,7 @@ class PPO:
 
 		# Now, batch_obs, batch_acts, and batch_log_probs are dictionaries with tensor values
 		print(f'size of batch_rews: {len(batch_rews[0])}, {len(batch_rews[0][0])}')
+		print(f'batch rews: {batch_rews}')
 
 		# Log the episodic returns and episodic lengths in this batch.
 		self.logger['batch_rews'] = batch_rews

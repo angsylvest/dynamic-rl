@@ -10,7 +10,7 @@ import random
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, size=10, num_agents = 1, obs_type = "simple pos", time_delay = False):
+    def __init__(self, render_mode=None, size=10, num_agents = 1, obs_type = "simple pos", time_delay = False, nonholonomic = False):
         self.size = size  # The size of the square grid
         self.window_size = 512  # The size of the PyGame window
 
@@ -20,6 +20,7 @@ class GridWorldEnv(gym.Env):
         self.num_agents = num_agents
         self.obs_type = obs_type
         self.introduce_time_delay = time_delay
+        self.nonholonomic = nonholonomic
 
         # reward info
         self.collision_radius_threshold = 2.0
@@ -42,6 +43,7 @@ class GridWorldEnv(gym.Env):
                     "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
                     "target": spaces.Box(0, size - 1, shape=(2,), dtype=int),
                     "remaining_steps": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+                    "orientation": spaces.Box(0, size - 1, shape=(2,), dtype=int),
                 }
         ) for _ in range(self.num_agents)
         ]
@@ -49,7 +51,8 @@ class GridWorldEnv(gym.Env):
         self.agent_obs_info = [
             {"agent": np.array([0,0]), 
              "target": np.array([0,0]),
-             "remaining_steps": np.array([-1])
+             "remaining_steps": np.array([-1]), 
+             "orientation": np.array([0,0]),
              }
 
              for i in range(self.num_agents)
@@ -128,6 +131,12 @@ class GridWorldEnv(gym.Env):
             self.agent_obs_info[i]["agent"] = agent_location
             self.agent_obs_info[i]["target"] = target_location
 
+            # random orientation (choice between (-1,0),(1,0),(0,1),(0,-1))
+            orientations = [(-1, 0), (1, 0), (0, 1), (0, -1)]
+            random_orientation = np.array(random.choice(orientations))
+
+            self.agent_obs_info[i]["orientation"] = random_orientation
+
 
         observation = self._get_obs()
         info = self._get_info()
@@ -143,6 +152,8 @@ class GridWorldEnv(gym.Env):
 
         # Calculate distance to the goal
         distance_to_goal = np.linalg.norm(current_loc - target)
+        distance_to_goal = np.clip(distance_to_goal, a_min=1e-10, a_max=None)
+
 
         # Check for collisions with other agents
         collision_penalty_sum = 0.0
@@ -157,7 +168,7 @@ class GridWorldEnv(gym.Env):
                     collision_penalty_sum += self.collision_penalty
 
         # Calculate the total reward
-        total_reward = self.goal_reward - collision_penalty_sum + self.proximity_reward / (distance_to_goal + 1e-6)
+        total_reward = self.goal_reward - collision_penalty_sum + self.proximity_reward / (distance_to_goal + 1e-10)
 
         return total_reward
 
@@ -165,6 +176,7 @@ class GridWorldEnv(gym.Env):
 
 
     def step(self, actions):
+        # updated to handle non-holonomic movements, won't instanteously move to loc
     
         rewards = []
         observations = []
@@ -181,27 +193,33 @@ class GridWorldEnv(gym.Env):
                 # print(f'self.agent_obs_info: {self.agent_obs_info} for agent_id {agent_id}')
                 loc = self.agent_obs_info[agent_id]["agent"]
 
-                # Calculate new x and y values
-                new_x = loc[0] + direction[0]
-                new_y = loc[1] + direction[1]
 
-                # Clip the values to be within the desired range
-                clipped_x = np.clip(new_x, 0, self.size - 1)
-                clipped_y = np.clip(new_y, 0, self.size - 1)
+                if self.nonholonomic and (self.agent_obs_info[agent_id]["orientation"] != direction).any(): # will move vector unless it's pointing in same direction
+                    
+                    self.agent_obs_info[agent_id]["orientation"] = direction 
 
-                # Update the observation_space
-                self.agent_obs_info[agent_id]["agent"] = np.array([clipped_x, clipped_y])
+                else: 
+                    # Calculate new x and y values
+                    new_x = loc[0] + direction[0]
+                    new_y = loc[1] + direction[1]
 
-                # current_reward = self.reward(agent_id) # TODO: update reward function
+                    # Clip the values to be within the desired range
+                    clipped_x = np.clip(new_x, 0, self.size - 1)
+                    clipped_y = np.clip(new_y, 0, self.size - 1)
 
-                # terminated_agent = np.array_equal(
-                #     self.agent_obs_info[agent_id]["agent"] , self.agent_obs_info[agent_id]["target"]
-                # )
+                    # Update the observation_space
+                    self.agent_obs_info[agent_id]["agent"] = np.array([clipped_x, clipped_y])
 
-                if self.introduce_time_delay:
-                    # add time delay once given new action before moving on to next action
-                    self.agent_obs_info[agent_id]["remaining_steps"] = 2
-                    # print(f'updating obs to {self.agent_obs_info[agent_id]["agent"]} with updated remaining steps')
+                    # current_reward = self.reward(agent_id) # TODO: update reward function
+
+                    # terminated_agent = np.array_equal(
+                    #     self.agent_obs_info[agent_id]["agent"] , self.agent_obs_info[agent_id]["target"]
+                    # )
+
+                    if self.introduce_time_delay:
+                        # add time delay once given new action before moving on to next action
+                        self.agent_obs_info[agent_id]["remaining_steps"] = 2
+                        # print(f'updating obs to {self.agent_obs_info[agent_id]["agent"]} with updated remaining steps')
 
             else: 
                 # agent must remain at current state 
@@ -272,6 +290,24 @@ class GridWorldEnv(gym.Env):
                 agent_color,
                 (self.agent_obs_info[i]["agent"] + 0.5) * pix_square_size,
                 pix_square_size / 3,
+            )
+
+            # Get the orientation vector
+            orientation_vector = np.array(self.agent_obs_info[i]["orientation"])
+
+            # Calculate the endpoint of the orientation vector
+            endpoint = (
+                int((self.agent_obs_info[i]["agent"][0] + 0.5) * pix_square_size + orientation_vector[0] * pix_square_size),
+                int((self.agent_obs_info[i]["agent"][1] + 0.5) * pix_square_size + orientation_vector[1] * pix_square_size)
+            )
+
+            # Draw the orientation vector
+            pygame.draw.line(
+                canvas,
+                agent_color, 
+                (int((self.agent_obs_info[i]["agent"][0] + 0.5) * pix_square_size), int((self.agent_obs_info[i]["agent"][1] + 0.5) * pix_square_size)),
+                endpoint,
+                width=3,
             )
 
         # Draw gridlines
