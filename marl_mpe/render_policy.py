@@ -5,7 +5,7 @@ from envs.navigation import GridWorldEnv
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-
+# maybe subject to change if model architecture is different 
 obs_dim = 2
 act_dim = 4
 num_agents = 2

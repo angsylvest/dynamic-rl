@@ -86,7 +86,7 @@ def test(env, actor_model, num_agents):
     # independently as a binary file that can be loaded in with torch.
     eval_policy(policy=policy, env=env, render=True)
 
-def main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic):
+def main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic, gifting):
     """
         The main function to run.
 
@@ -113,7 +113,7 @@ def main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic
     # Creates the environment we'll be running. If you want to replace with your own
     # custom environment, note that it must inherit Gym and have both continuous
     # observation and action spaces.
-    env = GridWorldEnv(num_agents=num_agents, obs_type = obs_type, time_delay=time_delay, nonholonomic=nonholonomic) # gym.make('Pendulum-v0')
+    env = GridWorldEnv(num_agents=num_agents, obs_type = obs_type, time_delay=time_delay, nonholonomic=nonholonomic, gifting = gifting) # gym.make('Pendulum-v0')
 
     # checkpoint save 
     checkpoint_dir = os.path.join("/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints", f"{policy_type}")
@@ -121,7 +121,7 @@ def main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic
 
     # Train or test, depending on the mode specified
     if  mode == 'train':
-        train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model, num_agents = num_agents, policy_type = policy_type, checkpoint_dir = checkpoint_dir)
+        train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model, num_agents = num_agents, policy_type = policy_type, checkpoint_dir = checkpoint_dir, gifting = gifting)
     else:
         test(env=env, actor_model=args.actor_model, num_agents = num_agents)
 
@@ -132,6 +132,8 @@ if __name__ == '__main__':
     obs_type = obs_types[0]
     time_delay = False
     nonholonomic = True
-    policy_type = f"simple_pos + time_delay_{time_delay}" # just way to label policies 
+    gifting = True 
+    # policy_type = f"simple_pos + time_delay_{time_delay}" # just way to label policies 
+    policy_type = f"simple_pos + gifting + time_delay{time_delay}"
     args = get_args() # Parse arguments from command line
-    main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic)
+    main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic, gifting)

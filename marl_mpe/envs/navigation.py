@@ -10,7 +10,7 @@ import random
 class GridWorldEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, size=10, num_agents = 1, obs_type = "simple pos", time_delay = False, nonholonomic = False):
+    def __init__(self, render_mode=None, size=10, num_agents = 1, obs_type = "simple pos", time_delay = False, nonholonomic = False, gifting = False):
         self.size = size  # The size of the square grid
         self.window_size = 512  # The size of the PyGame window
 
@@ -21,6 +21,7 @@ class GridWorldEnv(gym.Env):
         self.obs_type = obs_type
         self.introduce_time_delay = time_delay
         self.nonholonomic = nonholonomic
+        self.gifting = gifting
 
         # reward info
         self.collision_radius_threshold = 2.0
@@ -32,10 +33,14 @@ class GridWorldEnv(gym.Env):
         # TODO: make so this doesn't need to be hardcoded
         self.agent_colors = [(0, 0, 255), (255, 0, 0)]
         
-
-        self.action_space = [
-            spaces.Discrete(4) for _ in range(self.num_agents)
-        ]
+        if not self.gifting: 
+            self.action_space = [
+                spaces.Discrete(4) for _ in range(self.num_agents)
+            ]
+        else: 
+            self.action_space = [
+                spaces.Discrete(5) for _ in range(self.num_agents)
+            ]
 
         self.observation_space = [
             spaces.Dict(
@@ -69,6 +74,7 @@ class GridWorldEnv(gym.Env):
             1: np.array([0, 1]),
             2: np.array([-1, 0]),
             3: np.array([0, -1]),
+            4: np.array([0,0]) # waiting 
         }
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -172,7 +178,27 @@ class GridWorldEnv(gym.Env):
 
         return total_reward
 
-        
+
+    def validate_gifting(self, actions):
+        gift_neighb = {}
+
+        if 5 not in actions:
+            return False, "NA" 
+
+        for agent_id, action in enumerate(actions): 
+            curr_loc = self.agent_obs_info[agent_id]["agent"] 
+            if action == 5: 
+                for pos in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    neighbor_loc = (curr_loc[0] + pos[0], curr_loc[1] + pos[1])
+                    for a in range(self.num_agents):
+                        if neighbor_loc == self.agent_obs_info[a]["agent"]:
+                            gift_neighb[agent_id] = neighbor_loc
+                            break
+                    
+                # if there is no neighbor, want to penalize 
+                
+
+        return True, gift_neighb  # Add appropriate return value
 
 
     def step(self, actions):
@@ -184,6 +210,12 @@ class GridWorldEnv(gym.Env):
         infos = []
 
         # print(f'actions: {actions}')
+
+        # if gifting, first want to verify reward from nearest agent
+        check = False # initially false until validated 
+        if self.gifting: 
+            check, list = self.validate_gifting(actions)
+            
 
         for agent_id, action in enumerate(actions):
 
@@ -226,8 +258,11 @@ class GridWorldEnv(gym.Env):
                 self.agent_obs_info[agent_id]["remaining_steps"] -= 1
                 # print(f'decrementing steps, current state {self.agent_obs_info[agent_id]["remaining_steps"] }')
             
-
-            current_reward = self.reward(agent_id) # TODO: update reward function
+            if check: 
+                if actions[agent_id] == 5: 
+                    current_reward = 0.5 # retroactive reward 
+            else: 
+                current_reward = self.reward(agent_id) # TODO: update reward function
 
             terminated_agent = np.array_equal(
                 self.agent_obs_info[agent_id]["agent"] , self.agent_obs_info[agent_id]["target"]
