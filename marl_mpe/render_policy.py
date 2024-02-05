@@ -1,4 +1,5 @@
 import torch
+import os 
 from models.ffn import FeedForwardNN
 from envs.navigation import GridWorldEnv
 import matplotlib.pyplot as plt
@@ -12,13 +13,18 @@ num_agents = 2
 # Define the actor and critic models
 actors = [FeedForwardNN(obs_dim, act_dim) for _ in range(num_agents)]
 
-actor_paths_no_delay = ["/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_10_agent_0_type_simple_pos + time_delay_False.pth", "/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_10_agent_1_type_simple_pos + time_delay_False.pth"]
-# actor_paths_delay = ["/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_20_agent_0_type_simple_pos + time_delay_True.pth", "/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_20_agent_1_type_simple_pos + time_delay_True.pth"]
+parent_path = "/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/simple_pos + time_delay_False"
 
+# Get a list of all files in the parent path
+all_files = os.listdir(parent_path)
+
+# Filter files that match the desired pattern
+actor_files = [file for file in all_files if "ppo_actor" in file and file.endswith(".pth")]
+print(actor_files)
 # Load the pre-trained weights for each agent
 for agent_idx in range(num_agents):
     # actors[agent_idx].load_state_dict(torch.load(f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_10_agent_0.pth'))
-    actors[agent_idx].load_state_dict(torch.load(actor_paths_no_delay[agent_idx]))
+    actors[agent_idx].load_state_dict(torch.load(f'{parent_path}/{actor_files[agent_idx]}'))
 
 for actor in actors: 
     actor.eval()

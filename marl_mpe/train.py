@@ -6,6 +6,7 @@
 import gym
 import sys
 import torch
+import os 
 
 from arguments import get_args
 from models.ppo import PPO
@@ -14,7 +15,7 @@ from eval_policy import eval_policy
 
 from envs.navigation import GridWorldEnv
 
-def train(env, hyperparameters, actor_model, critic_model, num_agents, policy_type):
+def train(env, hyperparameters, actor_model, critic_model, num_agents, policy_type, checkpoint_dir):
     """
         Trains the model.
 
@@ -31,7 +32,7 @@ def train(env, hyperparameters, actor_model, critic_model, num_agents, policy_ty
     print(f"Training", flush=True)
 
     # Create a model for PPO (converted to IPPO)
-    model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, **hyperparameters)
+    model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, checkpoint_dir = checkpoint_dir, **hyperparameters)
 
     # Tries to load in an existing actor/critic model to continue training on
     for i in range(num_agents): 
@@ -114,9 +115,13 @@ def main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic
     # observation and action spaces.
     env = GridWorldEnv(num_agents=num_agents, obs_type = obs_type, time_delay=time_delay, nonholonomic=nonholonomic) # gym.make('Pendulum-v0')
 
+    # checkpoint save 
+    checkpoint_dir = os.path.join("/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints", f"{policy_type}")
+    os.makedirs(checkpoint_dir, exist_ok=True)  
+
     # Train or test, depending on the mode specified
     if  mode == 'train':
-        train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model, num_agents = num_agents, policy_type = policy_type)
+        train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model, num_agents = num_agents, policy_type = policy_type, checkpoint_dir = checkpoint_dir)
     else:
         test(env=env, actor_model=args.actor_model, num_agents = num_agents)
 

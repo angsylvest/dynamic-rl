@@ -6,6 +6,7 @@
 
 import gym
 import time
+import os 
 
 import numpy as np
 
@@ -19,7 +20,7 @@ class PPO:
 	"""
 		This is the PPO class we will use as our model in main.py
 	"""
-	def __init__(self, policy_class, env, num_agents, policy_type, **hyperparameters):
+	def __init__(self, policy_class, env, num_agents, policy_type, checkpoint_dir, **hyperparameters):
 		"""
 			Initializes the PPO model, including hyperparameters.
 
@@ -47,6 +48,7 @@ class PPO:
 		self.act_dim = env.action_space[0].n # is 4 now
 
 		self.policy_type = policy_type
+		self.checkpoint_dir = checkpoint_dir
 
 		# print('obs dim ', self.obs_dim)
 		# print('act_dim', self.act_dim)
@@ -93,6 +95,7 @@ class PPO:
 		"""
 		print(f"Learning... Running {self.max_timesteps_per_episode} timesteps per episode, ", end='')
 		print(f"{self.timesteps_per_batch} timesteps per batch for a total of {total_timesteps} timesteps")
+
 		
 		# Initialize the Matplotlib plot
 		plt.ion()  # Turn on interactive mode
@@ -226,8 +229,8 @@ class PPO:
 					# torch.save(self.actor.state_dict(), './ppo_actor.pth')
 					# torch.save(self.critic.state_dict(), './ppo_critic.pth')
 					for a in range(self.num_agents): 
-						torch.save(self.actors[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_actor_{i_so_far}_agent_{a}_type_{self.policy_type}.pth')
-						torch.save(self.critics[i].state_dict(), f'/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/ppo_critic_{i_so_far}_agent_{a}_type_{self.policy_type}.pth')
+						torch.save(self.actors[i].state_dict(), f'{self.checkpoint_dir}/ppo_actor_{i_so_far}_agent_{a}.pth')
+						torch.save(self.critics[i].state_dict(), f'{self.checkpoint_dir}/ppo_critic_{i_so_far}_agent_{a}.pth')
 
 		except KeyboardInterrupt:
 			print("\nTraining interrupted. Saving current state...")
@@ -283,8 +286,8 @@ class PPO:
 		t = 0 # Keeps track of how many timesteps we've run so far this batch
 
 		# Keep simulating until we've run more than or equal to specified timesteps per batch
-		print('ts per batch ', self.timesteps_per_batch)
-		print('ts per episode ' , self.max_timesteps_per_episode)
+		# print('ts per batch ', self.timesteps_per_batch)
+		# print('ts per episode ' , self.max_timesteps_per_episode)
 		while t < self.timesteps_per_batch:
 			# ep_rews = [] # rewards collected per episode
 			# Initialize ep_rews as an empty dictionary
@@ -367,8 +370,8 @@ class PPO:
 			batch_rtgs[i] = self.compute_rtgs(batch_rews[i])
 
 		# Now, batch_obs, batch_acts, and batch_log_probs are dictionaries with tensor values
-		print(f'size of batch_rews: {len(batch_rews[0])}, {len(batch_rews[0][0])}')
-		print(f'batch rews: {batch_rews}')
+		# print(f'size of batch_rews: {len(batch_rews[0])}, {len(batch_rews[0][0])}')
+		# print(f'batch rews: {batch_rews}')
 
 		# Log the episodic returns and episodic lengths in this batch.
 		self.logger['batch_rews'] = batch_rews
