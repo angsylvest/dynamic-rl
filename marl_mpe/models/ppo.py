@@ -39,28 +39,29 @@ class PPO:
 
 		# Initialize hyperparameters for training with PPO
 		self._init_hyperparameters(hyperparameters)
+		self.gifting = gifting
+		self.share_orientation = True # tune-able
 
 		# Extract environment information
 		self.env = env
 		# self.obs_dim = env.observation_space[0].shape[0]
-		self.obs_dim = env.observation_space[0]["agent"].shape[0] # + env.observation_space[0]["target"].shape[0]
+
+		# incorporate orientation info into observation 
+		self.obs_shared = ["agent", "ultrasonic", "neigh_orient"]
+		
+		if self.share_orientation: 
+			self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] + env.observation_space[0]["neigh_orient"].shape[0]
+		else: 
+			self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] 
+		
 		# self.act_dim = env.action_space[0].shape[0]
 		self.act_dim = env.action_space[0].n # is 4 now
 
 		self.policy_type = policy_type
 		self.checkpoint_dir = checkpoint_dir
 
-		# print('obs dim ', self.obs_dim)
-		# print('act_dim', self.act_dim)
-
-		# Initialize actor and critic networks
-		# converted to have one for each agent 
-		# self.actor = policy_class(self.obs_dim, self.act_dim)                                                   # ALG STEP 1
-		# self.critic = policy_class(self.obs_dim, 1)
-
-		# # Initialize optimizers for actor and critic
-		# self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
-		# self.critic_optim = Adam(self.critic.parameters(), lr=self.lr)
+		print('obs dim ', self.obs_dim)
+		print('act_dim', self.act_dim)
 
 		# separate each by agent (IPPO, will allow for async updates)
 		self.num_agents = num_agents 
@@ -296,6 +297,7 @@ class PPO:
 
 			# Reset the environment. sNote that obs is short for observation. 
 			obs, _ = self.env.reset() # is a list of agents, each is a dict of obs + info
+
 			# print(f'obs after env reset {obs}')
 
 			# each index is val for epi for each agent 
@@ -316,13 +318,22 @@ class PPO:
 
 				# for each agent, append current obs in respective dict 
 				for i in range(self.num_agents): 
-					batch_obs[i].append(obs[i]["agent"])
+					if self.share_orientation: 
+						batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["neigh_orient"])))
+
+					else: 
+						batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"])))
+
 
 				# Calculate action and make a step in the env. 
 				for i in range(self.num_agents): 
 					# ob = obs[i]["agent"]
 					# print(f'current obs: {ob} for agent {i}')
-					action, log_prob = self.get_action(obs[i]["agent"], i)
+					if self.share_orientation: 
+						action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["neigh_orient"])), i)
+					else: 
+						action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"])), i)
+					
 					# print('action', action)
 					actions.append(int(action))
 					log_probs.append(log_prob)

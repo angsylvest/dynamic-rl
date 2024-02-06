@@ -49,6 +49,8 @@ class GridWorldEnv(gym.Env):
                     "target": spaces.Box(0, size - 1, shape=(2,), dtype=int),
                     "remaining_steps": spaces.Box(0, size - 1, shape=(2,), dtype=int),
                     "orientation": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+                    "ultrasonic": spaces.Box(0, size - 1, shape=(4,), dtype=int),
+                    "neigh_orient": spaces.Box(0, size - 1, shape=(4,), dtype=int),
                 }
         ) for _ in range(self.num_agents)
         ]
@@ -58,6 +60,8 @@ class GridWorldEnv(gym.Env):
              "target": np.array([0,0]),
              "remaining_steps": np.array([-1]), 
              "orientation": np.array([0,0]),
+             "ultrasonic": np.array([0,0,0,0]), # N, W, E, S 
+             "neigh_orient": np.array([0,0,0,0]) # ←, ↑, →, ↓ (1, 2, 3, 4) else 0 if no agent
              }
 
              for i in range(self.num_agents)
@@ -74,7 +78,7 @@ class GridWorldEnv(gym.Env):
             1: np.array([0, 1]),
             2: np.array([-1, 0]),
             3: np.array([0, -1]),
-            4: np.array([0,0]) # waiting 
+            4: np.array([0,0]) # waiting (potential gifter)
         }
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -92,10 +96,14 @@ class GridWorldEnv(gym.Env):
 
     def _get_obs(self, index = None):
         if index is not None: 
-            return {"agent": self.agent_obs_info[index]["agent"], "target": self.agent_obs_info[index]["target"]}
+            return {"agent": self.agent_obs_info[index]["agent"], "target": self.agent_obs_info[index]["target"],
+                    "ultrasonic": self.agent_obs_info[index]["ultrasonic"], "neigh_orient": self.agent_obs_info[index]["neigh_orient"]
+                    }
         else: 
             return [
-                {"agent": self.agent_obs_info[i]["agent"], "target": self.agent_obs_info[i]["target"]}
+                {"agent": self.agent_obs_info[i]["agent"], "target": self.agent_obs_info[i]["target"], 
+                 "ultrasonic": self.agent_obs_info[i]["ultrasonic"], "neigh_orient": self.agent_obs_info[i]["neigh_orient"]
+                 }
                 for i in range(self.num_agents) 
             ]
 
@@ -196,6 +204,7 @@ class GridWorldEnv(gym.Env):
                             break
                     
                 # if there is no neighbor, want to penalize 
+                # also want to penalize if both neighboring agent's choose to defer
                 
 
         return True, gift_neighb  # Add appropriate return value
@@ -215,6 +224,7 @@ class GridWorldEnv(gym.Env):
         check = False # initially false until validated 
         if self.gifting: 
             check, list = self.validate_gifting(actions)
+            print(f'gifting output: {list}')
             
 
         for agent_id, action in enumerate(actions):
@@ -258,9 +268,13 @@ class GridWorldEnv(gym.Env):
                 self.agent_obs_info[agent_id]["remaining_steps"] -= 1
                 # print(f'decrementing steps, current state {self.agent_obs_info[agent_id]["remaining_steps"] }')
             
-            if check: 
-                if actions[agent_id] == 5: 
-                    current_reward = 0.5 # retroactive reward 
+            # TODO: hard-coded, must make more logical 
+            if check and actions[agent_id] == 4: 
+                if list[agent_id] != "NA": 
+                    current_reward = 0.25 # retroactive reward 
+                    print(f'retroactive reward granted ')
+                else: 
+                    current_reward = self.reward(agent_id)*0.25
             else: 
                 current_reward = self.reward(agent_id) # TODO: update reward function
 
@@ -381,10 +395,10 @@ class GridWorldEnv(gym.Env):
 
 
 def test_render(): 
-    env = GridWorldEnv(render_mode = "rgb_array", num_agents=2)
+    env = GridWorldEnv(render_mode = "rgb_array", num_agents=2,  gifting = True)
     print('env created')
     obs = env.reset()
-    print(env.step(actions=[0, 1]))
+    print(env.step(actions=[0, 4]))
     print('obs reset')
     screen = env.render()
 
@@ -394,6 +408,7 @@ def test_render():
     plt.imshow(screen)
     print('showing')
     plt.pause(20)
+
 
 # def main():
 #     test_render()

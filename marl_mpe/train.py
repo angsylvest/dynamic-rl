@@ -15,7 +15,7 @@ from eval_policy import eval_policy
 
 from envs.navigation import GridWorldEnv
 
-def train(env, hyperparameters, actor_model, critic_model, num_agents, policy_type, checkpoint_dir):
+def train(env, hyperparameters, actor_model, critic_model, num_agents, policy_type, checkpoint_dir, gifting):
     """
         Trains the model.
 
@@ -32,7 +32,7 @@ def train(env, hyperparameters, actor_model, critic_model, num_agents, policy_ty
     print(f"Training", flush=True)
 
     # Create a model for PPO (converted to IPPO)
-    model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, checkpoint_dir = checkpoint_dir, **hyperparameters)
+    model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, checkpoint_dir = checkpoint_dir, gifting = gifting, **hyperparameters)
 
     # Tries to load in an existing actor/critic model to continue training on
     for i in range(num_agents): 
@@ -132,8 +132,8 @@ if __name__ == '__main__':
     obs_type = obs_types[0]
     time_delay = False
     nonholonomic = True
-    gifting = True 
+    gifting = False 
     # policy_type = f"simple_pos + time_delay_{time_delay}" # just way to label policies 
-    policy_type = f"simple_pos + gifting + time_delay{time_delay}"
+    policy_type = f"simple_pos + gifting_{gifting} + time_delay_{time_delay}"
     args = get_args() # Parse arguments from command line
     main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic, gifting)

@@ -1,19 +1,22 @@
 import torch
 import os 
+import numpy as np 
 from models.ffn import FeedForwardNN
 from envs.navigation import GridWorldEnv
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+share_orientation = True 
+gifting = False 
 # maybe subject to change if model architecture is different 
-obs_dim = 2
-act_dim = 4
+obs_dim = 10 if share_orientation else 6
+act_dim = 5 if gifting else 4 
 num_agents = 2
 
 # Define the actor and critic models
 actors = [FeedForwardNN(obs_dim, act_dim) for _ in range(num_agents)]
 
-parent_path = "/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/simple_pos + time_delay_False"
+parent_path = "/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/simple_pos + gifting_False + time_delayFalse"
 
 # Get a list of all files in the parent path
 all_files = os.listdir(parent_path)
@@ -43,7 +46,10 @@ im = ax.imshow(env.render().astype(float), animated=True)
 def update(frame):
     actions = []
     for agent_idx in range(num_agents):
-        state_tensor = states[agent_idx]['agent']
+        if share_orientation: 
+            state_tensor = np.concatenate((states[agent_idx]['agent'],states[agent_idx]['ultrasonic'],states[agent_idx]['neigh_orient']))
+        else: 
+            state_tensor = np.concatenate((states[agent_idx]['agent'], states[agent_idx]['ultrasonic']))
 
         # Get action from the actor model
         with torch.no_grad():
