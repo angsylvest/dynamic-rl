@@ -47,10 +47,11 @@ class GridWorldEnv(gym.Env):
                 {
                     "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
                     "target": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-                    "remaining_steps": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+                    "remaining_steps": spaces.Box(0, size - 1, shape=(1,), dtype=int),
                     "orientation": spaces.Box(0, size - 1, shape=(2,), dtype=int),
                     "ultrasonic": spaces.Box(0, size - 1, shape=(4,), dtype=int),
                     "neigh_orient": spaces.Box(0, size - 1, shape=(4,), dtype=int),
+                    "neigh_remaining_steps": spaces.Box(0, size - 1, shape=(4,), dtype=int),
                 }
         ) for _ in range(self.num_agents)
         ]
@@ -61,7 +62,8 @@ class GridWorldEnv(gym.Env):
              "remaining_steps": np.array([-1]), 
              "orientation": np.array([0,0]),
              "ultrasonic": np.array([0,0,0,0]), # N, W, E, S 
-             "neigh_orient": np.array([0,0,0,0]) # ←, ↑, →, ↓ (1, 2, 3, 4) else 0 if no agent
+             "neigh_orient": np.array([0,0,0,0]), # ←, ↑, →, ↓ (1, 2, 3, 4) else 0 if no agent
+             "neigh_remaining_steps": np.array([0,0,0,0]) # incorporate speed heterogeneity
              }
 
              for i in range(self.num_agents)
@@ -108,6 +110,7 @@ class GridWorldEnv(gym.Env):
             # Find occupied positions and neighbor orientations
             occupancy = np.zeros(4, dtype=int)
             neigh_orientation = np.full(4, -1, dtype=int)  # Initialize with -1 for unmatched orientations
+            neigh_timestep = np.full(4, -1, dtype=int)  # Initialize with -1 for unmatched orientations
 
             # Find matching positions and orientations
             for agent_id, other_agent_info in enumerate(self.agent_obs_info):
@@ -115,27 +118,44 @@ class GridWorldEnv(gym.Env):
                     pos_index = np.where(np.all(neighbor_positions == other_agent_info["agent"], axis=1))[0][0]
                     occupancy[pos_index] = 1
                     neigh_orientation[pos_index] = agent_id  # Store the index of the agent
+                    neigh_timestep[pos_index] = other_agent_info["remaining_steps"]
 
             # Update agent observation info
             agent_info["ultrasonic"] = occupancy
             agent_info["neigh_orient"] = neigh_orientation
+            agent_info["neigh_remaining_steps"] = neigh_timestep
 
 
 
     def _get_obs(self, index = None):
-        self.update_ultrasonic()
+        self.update_ultrasonic() # TODO: maybe need to fix to be more efficient 
 
         if index is not None: 
-            return {"agent": self.agent_obs_info[index]["agent"], "target": self.agent_obs_info[index]["target"],
-                    "ultrasonic": self.agent_obs_info[index]["ultrasonic"], "neigh_orient": self.agent_obs_info[index]["neigh_orient"]
+            if not self.introduce_time_delay: 
+                return {"agent": self.agent_obs_info[index]["agent"], "target": self.agent_obs_info[index]["target"],
+                        "ultrasonic": self.agent_obs_info[index]["ultrasonic"], "neigh_orient": self.agent_obs_info[index]["neigh_orient"]
+                        }
+            else: 
+                return {"agent": self.agent_obs_info[index]["agent"], "target": self.agent_obs_info[index]["target"],
+                    "ultrasonic": self.agent_obs_info[index]["ultrasonic"], "neigh_orient": self.agent_obs_info[index]["neigh_orient"], 
+                    "remaining_steps": self.agent_obs_info[index]["remaining_steps"], "neigh_remaining_steps": self.agent_obs_info[index]["neigh_remaining_steps"]  
                     }
         else: 
-            return [
-                {"agent": self.agent_obs_info[i]["agent"], "target": self.agent_obs_info[i]["target"], 
-                 "ultrasonic": self.agent_obs_info[i]["ultrasonic"], "neigh_orient": self.agent_obs_info[i]["neigh_orient"]
-                 }
-                for i in range(self.num_agents) 
-            ]
+            if not self.introduce_time_delay: 
+                return [
+                    {"agent": self.agent_obs_info[i]["agent"], "target": self.agent_obs_info[i]["target"], 
+                    "ultrasonic": self.agent_obs_info[i]["ultrasonic"], "neigh_orient": self.agent_obs_info[i]["neigh_orient"]
+                    }
+                    for i in range(self.num_agents) 
+                ]
+            else: 
+                return [
+                    {"agent": self.agent_obs_info[i]["agent"], "target": self.agent_obs_info[i]["target"], 
+                    "ultrasonic": self.agent_obs_info[i]["ultrasonic"], "neigh_orient": self.agent_obs_info[i]["neigh_orient"], 
+                    "remaining_steps": self.agent_obs_info[i]["remaining_steps"], "neigh_remaining_steps": self.agent_obs_info[i]["neigh_remaining_steps"]  
+                    }
+                    for i in range(self.num_agents) 
+                ]
 
     def _get_info(self, index = None):
         if index is not None: 
@@ -180,6 +200,7 @@ class GridWorldEnv(gym.Env):
             random_orientation = np.array(random.choice(orientations))
 
             self.agent_obs_info[i]["orientation"] = random_orientation
+            self.agent_obs_info[i]["remaining_steps"] = np.array([0])
 
 
         observation = self._get_obs()
@@ -290,7 +311,7 @@ class GridWorldEnv(gym.Env):
 
                     if self.introduce_time_delay:
                         # add time delay once given new action before moving on to next action
-                        self.agent_obs_info[agent_id]["remaining_steps"] = 2
+                        self.agent_obs_info[agent_id]["remaining_steps"] = np.array([2])
                         # print(f'updating obs to {self.agent_obs_info[agent_id]["agent"]} with updated remaining steps')
 
             else: 
@@ -425,7 +446,7 @@ class GridWorldEnv(gym.Env):
 
 
 def test_render(): 
-    env = GridWorldEnv(render_mode = "rgb_array", num_agents=2,  gifting = True)
+    env = GridWorldEnv(render_mode = "rgb_array", num_agents=2, time_delay=True)
     print('env created')
     obs = env.reset()
     print(env.step(actions=[0, 4]))

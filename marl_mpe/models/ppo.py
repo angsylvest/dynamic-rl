@@ -20,7 +20,7 @@ class PPO:
 	"""
 		This is the PPO class we will use as our model in main.py
 	"""
-	def __init__(self, policy_class, env, num_agents, policy_type, checkpoint_dir, gifting, **hyperparameters):
+	def __init__(self, policy_class, env, num_agents, policy_type, checkpoint_dir, gifting, time_delay, **hyperparameters):
 		"""
 			Initializes the PPO model, including hyperparameters.
 
@@ -40,7 +40,8 @@ class PPO:
 		# Initialize hyperparameters for training with PPO
 		self._init_hyperparameters(hyperparameters)
 		self.gifting = gifting
-		self.share_orientation = True # tune-able
+		self.share_orientation = False # tune-able
+		self.time_delay = time_delay
 
 		# Extract environment information
 		self.env = env
@@ -53,6 +54,9 @@ class PPO:
 			self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] + env.observation_space[0]["neigh_orient"].shape[0]
 		else: 
 			self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] 
+
+		if self.time_delay: 
+			self.obs_dim += env.observation_space[0]["remaining_steps"].shape[0] + env.observation_space[0]["neigh_remaining_steps"].shape[0]
 		
 		# self.act_dim = env.action_space[0].shape[0]
 		self.act_dim = env.action_space[0].n # is 4 now
@@ -141,7 +145,7 @@ class PPO:
 				# update process (will occur for each agent's model)
 
 				for i in range(self.num_agents): 
-					print(f'lens of rel batch info \n batch_obs: {batch_obs[i].shape} \n batch_acts: {batch_acts[i].shape} \n batch_rtgs {batch_rtgs[i].shape} \n  for agent {i}')
+					# print(f'lens of rel batch info \n batch_obs: {batch_obs[i].shape} \n batch_acts: {batch_acts[i].shape} \n batch_rtgs {batch_rtgs[i].shape} \n  for agent {i}')
 
 					# Calculate advantage at k-th iteration
 					V, _ = self.evaluate(batch_obs[i], batch_acts[i], batch_rtgs[i], i)
@@ -216,7 +220,7 @@ class PPO:
 				for agent_id, line in agent_lines.items():
 					avg_ep_rews_agent = plot_metrics[agent_id]
 					self._update_live_plot(ax_agents, line, i_so_far, avg_ep_rews_agent, i_so_far)
-					print(f"avg_ep_rews_agent for agent {agent_id}:", avg_ep_rews_agent)
+					# print(f"avg_ep_rews_agent for agent {agent_id}:", avg_ep_rews_agent)
 
 
 				plt.pause(0.001)
@@ -317,12 +321,21 @@ class PPO:
 				t += 1 # Increment timesteps ran this batch so far
 
 				# for each agent, append current obs in respective dict 
+				# TODO: MAKE LESS UGLY/CLEAN
 				for i in range(self.num_agents): 
 					if self.share_orientation: 
-						batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], np.array(obs[i]["neigh_orient"]))))
+						if self.time_delay: 
+							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], np.array(obs[i]["neigh_orient"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"]))))
+						else: 
+							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], np.array(obs[i]["neigh_orient"]))))
 
 					else: 
-						batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"])))
+						if self.time_delay: 
+							# print(f'shapes of each to review: remaining steps {obs[i]["remaining_steps"]} neigh steps left: {obs[i]["neigh_remaining_steps"].shape} compared to {obs[i]["agent"]}')
+							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"]))) 
+							
+						else: 
+							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"])))
 
 
 				# Calculate action and make a step in the env. 
@@ -330,9 +343,16 @@ class PPO:
 					# ob = obs[i]["agent"]
 					# print(f'current obs: {ob} for agent {i}')
 					if self.share_orientation: 
-						action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["neigh_orient"])), i)
+						if self.time_delay: 
+							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["neigh_orient"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"])), i)
+						else: 
+							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["neigh_orient"])), i)
 					else: 
-						action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"])), i)
+						if self.time_delay: 
+							# print(f'shapes of each to review: remaining steps {obs[i]["remaining_steps"].shape} neigh steps left: {obs[i]["neigh_remaining_steps"].shape} compared to {obs[i]["agent"].shape}')
+							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"])), i)
+						else: 
+							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"])), i)
 					
 					# print('action', action)
 					actions.append(int(action))
@@ -447,6 +467,7 @@ class PPO:
 		"""
 		# Query the actor network for a mean action
 		# mean = self.actor(obs)
+		# print(f'obs shape: {obs.shape}')
 		mean = self.actors[index](obs)
 		dist = torch.distributions.Categorical(logits=mean)
 

@@ -6,17 +6,26 @@ from envs.navigation import GridWorldEnv
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-share_orientation = True 
+share_orientation = False 
 gifting = False 
+time_delay = True 
 # maybe subject to change if model architecture is different 
-obs_dim = 10 if share_orientation else 6
+# if share_orientation and not time_delay: 
+#     obs_dim = 10 
+# elif not share_orientation and not time_delay: 
+#     obs_dim = 6 
+# elif not share_orientation and time_delay: 
+
+# obs_dim = 10 if share_orientation else 6
+# obs_dim = obs_dim + 5 if time_delay else obs_dim
+obs_dim = 11
 act_dim = 5 if gifting else 4 
 num_agents = 2
 
 # Define the actor and critic models
 actors = [FeedForwardNN(obs_dim, act_dim) for _ in range(num_agents)]
 
-parent_path = "/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/simple_pos + gifting_False + time_delay_False"
+parent_path = "/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/simple_pos + gifting_False + time_delay_True"
 
 # Get a list of all files in the parent path
 all_files = os.listdir(parent_path)
@@ -32,7 +41,7 @@ for agent_idx in range(num_agents):
 for actor in actors: 
     actor.eval()
 
-env = GridWorldEnv(render_mode="rgb_array", num_agents=num_agents, obs_type="simple pos", time_delay = False, nonholonomic=True)
+env = GridWorldEnv(render_mode="rgb_array", num_agents=num_agents, obs_type="simple pos", time_delay = time_delay, nonholonomic=True)
 
 # Initialize the environment
 states, _ = env.reset()
@@ -49,7 +58,10 @@ def update(frame):
         if share_orientation: 
             state_tensor = np.concatenate((states[agent_idx]['agent'],states[agent_idx]['ultrasonic'],states[agent_idx]['neigh_orient']))
         else: 
-            state_tensor = np.concatenate((states[agent_idx]['agent'], states[agent_idx]['ultrasonic']))
+            if time_delay: 
+                state_tensor = np.concatenate((states[agent_idx]['agent'], states[agent_idx]['ultrasonic'], states[agent_idx]['remaining_steps'], states[agent_idx]['neigh_remaining_steps']))
+            else: 
+                state_tensor = np.concatenate((states[agent_idx]['agent'], states[agent_idx]['ultrasonic']))
 
         # Get action from the actor model
         with torch.no_grad():
