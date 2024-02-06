@@ -94,7 +94,37 @@ class GridWorldEnv(gym.Env):
         self.window = None
         self.clock = None
 
+    def update_ultrasonic(self):
+        for idx, agent_info in enumerate(self.agent_obs_info):
+            cur_pos = np.array(agent_info["agent"])
+
+            # Define orientations and positions relative to the current agent
+            orientations = np.array([(0, 1), (-1, 0), (1, 0), (0, -1)])
+            neighbor_positions = cur_pos + orientations
+
+            # Convert neighbor positions to a set for faster lookup
+            neighbor_positions_set = set(map(tuple, neighbor_positions))
+
+            # Find occupied positions and neighbor orientations
+            occupancy = np.zeros(4, dtype=int)
+            neigh_orientation = np.full(4, -1, dtype=int)  # Initialize with -1 for unmatched orientations
+
+            # Find matching positions and orientations
+            for agent_id, other_agent_info in enumerate(self.agent_obs_info):
+                if tuple(other_agent_info["agent"]) in neighbor_positions_set:
+                    pos_index = np.where(np.all(neighbor_positions == other_agent_info["agent"], axis=1))[0][0]
+                    occupancy[pos_index] = 1
+                    neigh_orientation[pos_index] = agent_id  # Store the index of the agent
+
+            # Update agent observation info
+            agent_info["ultrasonic"] = occupancy
+            agent_info["neigh_orient"] = neigh_orientation
+
+
+
     def _get_obs(self, index = None):
+        self.update_ultrasonic()
+
         if index is not None: 
             return {"agent": self.agent_obs_info[index]["agent"], "target": self.agent_obs_info[index]["target"],
                     "ultrasonic": self.agent_obs_info[index]["ultrasonic"], "neigh_orient": self.agent_obs_info[index]["neigh_orient"]

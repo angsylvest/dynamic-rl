@@ -319,7 +319,7 @@ class PPO:
 				# for each agent, append current obs in respective dict 
 				for i in range(self.num_agents): 
 					if self.share_orientation: 
-						batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["neigh_orient"])))
+						batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], np.array(obs[i]["neigh_orient"]))))
 
 					else: 
 						batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"])))
