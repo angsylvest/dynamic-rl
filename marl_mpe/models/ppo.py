@@ -49,9 +49,9 @@ class PPO:
 		# self.obs_dim = env.observation_space[0].shape[0]
 		
 		if self.share_orientation: 
-			self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] + env.observation_space[0]["neigh_orient"].shape[0]
+			self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] + env.observation_space[0]["neigh_orient"].shape[0] + env.observation_space[0]["relative_goal_pos"].shape[0]
 		else: 
-			self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] 
+			self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] + env.observation_space[0]["relative_goal_pos"].shape[0]
 
 		if self.time_delay: 
 			self.obs_dim += env.observation_space[0]["remaining_steps"].shape[0] + env.observation_space[0]["neigh_remaining_steps"].shape[0]
@@ -157,7 +157,7 @@ class PPO:
 
 				for i in range(self.num_agents): 
 					# print(f'lens of rel batch info \n batch_obs: {batch_obs[i].shape} \n batch_acts: {batch_acts[i].shape} \n batch_rtgs {batch_rtgs[i].shape} \n  for agent {i}')
-
+					# print(f'appearance of batch_obs: {batch_obs[i]}')
 					# Calculate advantage at k-th iteration
 					V, _ = self.evaluate(batch_obs[i], batch_acts[i], batch_rtgs[i], i)
 					A_k = batch_rtgs[i] - V.detach()                                                                       # ALG STEP 5
@@ -210,8 +210,6 @@ class PPO:
 					# Log actor loss
 					self.logger[f'actor_losses'].append(actor_loss.detach())
 
-				# Update the live plot for the total average episodic return
-				# Update the live plot for the total average episodic return
 				# Update the live plot for the total average episodic return
 				plot_metrics = {}
 				# print(f'batch rews collected info: {self.logger["batch_rews"]}')
@@ -270,7 +268,7 @@ class PPO:
 			print("\nTraining interrupted. Saving current state...")
 
 			# Save dynamic graph or relevant information
-			plt.savefig('dynamic_graph_interrupted.png')  # Adjust the filename and format as needed
+			plt.savefig(f'dynamic_graph_interrupted_{self.policy_type}.png')  # Adjust the filename and format as needed
 			print("Dynamic graph saved.")
 
 			# Optionally save the model state here if needed
@@ -354,35 +352,36 @@ class PPO:
 				for i in range(self.num_agents): 
 					if self.share_orientation: 
 						if self.time_delay: 
-							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], np.array(obs[i]["neigh_orient"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"]))))
+							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], np.array(obs[i]["neigh_orient"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"], obs[i]["relative_goal_pos"]))))
 						else: 
-							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], np.array(obs[i]["neigh_orient"]))))
+							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], np.array(obs[i]["neigh_orient"], obs[i]["relative_goal_pos"]))))
 
 					else: 
 						if self.time_delay: 
 							# print(f'shapes of each to review: remaining steps {obs[i]["remaining_steps"]} neigh steps left: {obs[i]["neigh_remaining_steps"].shape} compared to {obs[i]["agent"]}')
-							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"]))) 
+							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"], obs[i]["relative_goal_pos"]))) 
 							
 						else: 
-							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"])))
+							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["relative_goal_pos"])))
 
 
 				# Calculate action and make a step in the env. 
 				for i in range(self.num_agents): 
 					# ob = obs[i]["agent"]
 					# print(f'current obs: {ob} for agent {i}')
+
 					if self.share_orientation: 
 						if self.time_delay: 
-							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["neigh_orient"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"])), i)
+							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["neigh_orient"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"], obs[i]["relative_goal_pos"])), i)
 						else: 
-							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["neigh_orient"])), i)
+							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["neigh_orient"], obs[i]["relative_goal_pos"])), i)
 					else: 
 						if self.time_delay: 
-							# print(f'shapes of each to review: remaining steps {obs[i]["remaining_steps"].shape} neigh steps left: {obs[i]["neigh_remaining_steps"].shape} compared to {obs[i]["agent"].shape}')
-							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"])), i)
+							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"], obs[i]["relative_goal_pos"])), i)
 						else: 
-							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"])), i)
-					
+							# print(f'size of relative pos: {obs[i]["relative_goal_pos"]}')
+							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["relative_goal_pos"])), i)
+
 					# print('action', action)
 					actions.append(int(action))
 					log_probs.append(log_prob)

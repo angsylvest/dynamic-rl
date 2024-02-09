@@ -130,7 +130,7 @@ if __name__ == '__main__':
     num_agents = 2
     obs_types = ["simple pos", "simple pos and local occupancy", "simple pos and vector occupancy"]
     obs_type = obs_types[0]
-    time_delay = True
+    time_delay = False
     nonholonomic = False
     gifting = False 
     share_orientation = False

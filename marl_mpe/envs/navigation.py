@@ -53,6 +53,7 @@ class GridWorldEnv(gym.Env):
                     "ultrasonic": spaces.Box(0, size - 1, shape=(4,), dtype=int),
                     "neigh_orient": spaces.Box(0, size - 1, shape=(4,), dtype=int),
                     "neigh_remaining_steps": spaces.Box(0, size - 1, shape=(4,), dtype=int),
+                    "relative_goal_pos": spaces.Box(0, size - 1, shape=(2,), dtype=int),
                 }
         ) for _ in range(self.num_agents)
         ]
@@ -65,6 +66,7 @@ class GridWorldEnv(gym.Env):
              "ultrasonic": np.array([0,0,0,0]), # N, W, E, S 
              "neigh_orient": np.array([0,0,0,0]), # ←, ↑, →, ↓ (1, 2, 3, 4) else 0 if no agent
              "neigh_remaining_steps": np.array([0,0,0,0]) # incorporate speed heterogeneity
+
              }
 
              for i in range(self.num_agents)
@@ -126,37 +128,49 @@ class GridWorldEnv(gym.Env):
             agent_info["neigh_orient"] = neigh_orientation
             agent_info["neigh_remaining_steps"] = neigh_timestep
 
+    def _get_obs(self, index=None):
+        self.update_ultrasonic()  # TODO: maybe need to fix to be more efficient 
 
+        if index is not None:
+            obs = {
+                "agent": self.agent_obs_info[index]["agent"],
+                "target": self.agent_obs_info[index]["target"],
+                "ultrasonic": self.agent_obs_info[index]["ultrasonic"],
+                "neigh_orient": self.agent_obs_info[index]["neigh_orient"]
+            }
+            # Calculate relative goal position
+            agent_pos = self.agent_obs_info[index]["agent"]
+            goal_pos = self.agent_obs_info[index]["target"]
+            relative_goal_pos = goal_pos - agent_pos
+            obs["relative_goal_pos"] = np.array(relative_goal_pos)
+            # print(relative_goal_pos)
 
-    def _get_obs(self, index = None):
-        self.update_ultrasonic() # TODO: maybe need to fix to be more efficient 
+            if self.introduce_time_delay:
+                obs["remaining_steps"] = self.agent_obs_info[index]["remaining_steps"]
+                obs["neigh_remaining_steps"] = self.agent_obs_info[index]["neigh_remaining_steps"]
 
-        if index is not None: 
-            if not self.introduce_time_delay: 
-                return {"agent": self.agent_obs_info[index]["agent"], "target": self.agent_obs_info[index]["target"],
-                        "ultrasonic": self.agent_obs_info[index]["ultrasonic"], "neigh_orient": self.agent_obs_info[index]["neigh_orient"]
-                        }
-            else: 
-                return {"agent": self.agent_obs_info[index]["agent"], "target": self.agent_obs_info[index]["target"],
-                    "ultrasonic": self.agent_obs_info[index]["ultrasonic"], "neigh_orient": self.agent_obs_info[index]["neigh_orient"], 
-                    "remaining_steps": self.agent_obs_info[index]["remaining_steps"], "neigh_remaining_steps": self.agent_obs_info[index]["neigh_remaining_steps"]  
-                    }
-        else: 
-            if not self.introduce_time_delay: 
-                return [
-                    {"agent": self.agent_obs_info[i]["agent"], "target": self.agent_obs_info[i]["target"], 
-                    "ultrasonic": self.agent_obs_info[i]["ultrasonic"], "neigh_orient": self.agent_obs_info[i]["neigh_orient"]
-                    }
-                    for i in range(self.num_agents) 
-                ]
-            else: 
-                return [
-                    {"agent": self.agent_obs_info[i]["agent"], "target": self.agent_obs_info[i]["target"], 
-                    "ultrasonic": self.agent_obs_info[i]["ultrasonic"], "neigh_orient": self.agent_obs_info[i]["neigh_orient"], 
-                    "remaining_steps": self.agent_obs_info[i]["remaining_steps"], "neigh_remaining_steps": self.agent_obs_info[i]["neigh_remaining_steps"]  
-                    }
-                    for i in range(self.num_agents) 
-                ]
+            return obs
+        else:
+            obs_list = []
+            for i in range(self.num_agents):
+                obs = {
+                    "agent": self.agent_obs_info[i]["agent"],
+                    "target": self.agent_obs_info[i]["target"],
+                    "ultrasonic": self.agent_obs_info[i]["ultrasonic"],
+                    "neigh_orient": self.agent_obs_info[i]["neigh_orient"]
+                }
+                # Calculate relative goal position
+                agent_pos = self.agent_obs_info[i]["agent"]
+                goal_pos = self.agent_obs_info[i]["target"]
+                relative_goal_pos = goal_pos - agent_pos
+                obs["relative_goal_pos"] = np.array(relative_goal_pos)
+
+                if self.introduce_time_delay:
+                    obs["remaining_steps"] = self.agent_obs_info[i]["remaining_steps"]
+                    obs["neigh_remaining_steps"] = self.agent_obs_info[i]["neigh_remaining_steps"]
+
+                obs_list.append(obs)
+            return obs_list
 
     def _get_info(self, index = None):
         if index is not None: 
@@ -306,15 +320,9 @@ class GridWorldEnv(gym.Env):
                     # Update the observation_space
                     self.agent_obs_info[agent_id]["agent"] = np.array([clipped_x, clipped_y])
 
-                    # current_reward = self.reward(agent_id) # TODO: update reward function
-
-                    # terminated_agent = np.array_equal(
-                    #     self.agent_obs_info[agent_id]["agent"] , self.agent_obs_info[agent_id]["target"]
-                    # )
-
                     if self.introduce_time_delay:
                         # add time delay once given new action before moving on to next action
-                        self.agent_obs_info[agent_id]["remaining_steps"] = np.array([2])
+                        self.agent_obs_info[agent_id]["remaining_steps"] = np.array([1]) if agent_id == 0 else np.array([2])
                         # print(f'updating obs to {self.agent_obs_info[agent_id]["agent"]} with updated remaining steps')
 
             else: 
