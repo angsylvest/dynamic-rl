@@ -15,7 +15,7 @@ from eval_policy import eval_policy
 
 from envs.navigation import GridWorldEnv
 
-def train(env, hyperparameters, actor_model, critic_model, num_agents, policy_type, checkpoint_dir, gifting, time_delay):
+def train(env, hyperparameters, actor_model, critic_model, num_agents, policy_type, checkpoint_dir, gifting, time_delay, share_orientation):
     """
         Trains the model.
 
@@ -32,7 +32,7 @@ def train(env, hyperparameters, actor_model, critic_model, num_agents, policy_ty
     print(f"Training", flush=True)
 
     # Create a model for PPO (converted to IPPO)
-    model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, checkpoint_dir = checkpoint_dir, gifting = gifting, time_delay = time_delay, **hyperparameters)
+    model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, checkpoint_dir = checkpoint_dir, gifting = gifting, time_delay = time_delay, share_orientation= share_orientation, **hyperparameters)
 
     # Tries to load in an existing actor/critic model to continue training on
     for i in range(num_agents): 
@@ -86,7 +86,7 @@ def test(env, actor_model, num_agents):
     # independently as a binary file that can be loaded in with torch.
     eval_policy(policy=policy, env=env, render=True)
 
-def main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic, gifting):
+def main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic, gifting, share_orientation):
     """
         The main function to run.
 
@@ -113,7 +113,7 @@ def main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic
     # Creates the environment we'll be running. If you want to replace with your own
     # custom environment, note that it must inherit Gym and have both continuous
     # observation and action spaces.
-    env = GridWorldEnv(num_agents=num_agents, obs_type = obs_type, time_delay=time_delay, nonholonomic=nonholonomic, gifting = gifting) # gym.make('Pendulum-v0')
+    env = GridWorldEnv(num_agents=num_agents, obs_type = obs_type, time_delay=time_delay, nonholonomic=nonholonomic, gifting=gifting) # gym.make('Pendulum-v0')
 
     # checkpoint save 
     checkpoint_dir = os.path.join("/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints", f"{policy_type}")
@@ -121,7 +121,7 @@ def main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic
 
     # Train or test, depending on the mode specified
     if  mode == 'train':
-        train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model, num_agents = num_agents, policy_type = policy_type, checkpoint_dir = checkpoint_dir, gifting = gifting, time_delay = time_delay)
+        train(env=env, hyperparameters=hyperparameters, actor_model=args.actor_model, critic_model=args.critic_model, num_agents = num_agents, policy_type = policy_type, checkpoint_dir = checkpoint_dir, gifting = gifting, time_delay = time_delay, share_orientation = share_orientation)
     else:
         test(env=env, actor_model=args.actor_model, num_agents = num_agents)
 
@@ -133,7 +133,8 @@ if __name__ == '__main__':
     time_delay = True
     nonholonomic = False
     gifting = False 
+    share_orientation = False
     # policy_type = f"simple_pos + time_delay_{time_delay}" # just way to label policies 
     policy_type = f"simple_pos + gifting_{gifting} + time_delay_{time_delay}"
     args = get_args() # Parse arguments from command line
-    main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic, gifting)
+    main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic, gifting, share_orientation)

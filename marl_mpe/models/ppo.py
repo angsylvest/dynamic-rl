@@ -7,6 +7,7 @@
 import gym
 import time
 import os 
+import csv
 
 import numpy as np
 
@@ -20,7 +21,7 @@ class PPO:
 	"""
 		This is the PPO class we will use as our model in main.py
 	"""
-	def __init__(self, policy_class, env, num_agents, policy_type, checkpoint_dir, gifting, time_delay, **hyperparameters):
+	def __init__(self, policy_class, env, num_agents, policy_type, checkpoint_dir, gifting, time_delay, share_orientation, **hyperparameters):
 		"""
 			Initializes the PPO model, including hyperparameters.
 
@@ -40,15 +41,12 @@ class PPO:
 		# Initialize hyperparameters for training with PPO
 		self._init_hyperparameters(hyperparameters)
 		self.gifting = gifting
-		self.share_orientation = False # tune-able
+		self.share_orientation = share_orientation # tune-able
 		self.time_delay = time_delay
 
 		# Extract environment information
 		self.env = env
 		# self.obs_dim = env.observation_space[0].shape[0]
-
-		# incorporate orientation info into observation 
-		self.obs_shared = ["agent", "ultrasonic", "neigh_orient"]
 		
 		if self.share_orientation: 
 			self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] + env.observation_space[0]["neigh_orient"].shape[0]
@@ -63,6 +61,19 @@ class PPO:
 
 		self.policy_type = policy_type
 		self.checkpoint_dir = checkpoint_dir
+
+		self.csv_filename_per_agent = f'{self.checkpoint_dir}/csv_per_agent.csv'
+		self.csv_filename_cum = f'{self.checkpoint_dir}/csv_cum.csv'
+
+		# Initialize CSV file with column names
+		with open(self.csv_filename_per_agent, 'w', newline='') as csvfile:
+			writer = csv.writer(csvfile)
+			writer.writerow(['Iteration', 'Agent_ID', 'Average_Reward'])
+
+		# Initialize CSV file with column names
+		with open(self.csv_filename_cum, 'w', newline='') as csvfile:
+			writer = csv.writer(csvfile)
+			writer.writerow(['Iteration', 'Average_Reward'])
 
 		print('obs dim ', self.obs_dim)
 		print('act_dim', self.act_dim)
@@ -203,23 +214,41 @@ class PPO:
 				# Update the live plot for the total average episodic return
 				# Update the live plot for the total average episodic return
 				plot_metrics = {}
+				# print(f'batch rews collected info: {self.logger["batch_rews"]}')
+
 				for a in range(self.num_agents):
 					plot_metrics[a] = 0
 					batch_rews_a = self.logger['batch_rews'][a]
 					
-					total_rewards_a = sum(sum(ep_rewards) for ep_rewards in batch_rews_a)
-					total_episodes_a = sum(len(ep_rewards) for ep_rewards in batch_rews_a)
+					# total_rewards_a = sum(sum(ep_rewards) for ep_rewards in batch_rews_a)
+					# total_episodes_a = sum(len(ep_rewards) for ep_rewards in batch_rews_a)
+					num_ep = 0 
+					total_avgs = 0 
+					for ep in batch_rews_a: 
+						avg = sum(ep) / len(ep)
+						num_ep += 1
+						total_avgs += avg 
+						# print(f'running avg: {avg} for {sum(ep)} for ep size {len(ep)}')
+					# total_rewards_a = (sum(ep_rewards) for ep_rewards in batch_rews_a)
+					# total_episodes_a = len(batch_rews_a)
+					# total
+						
+
+					# print(f'total_rewards_a: {total_rewards_a} and total_episodes_a: {total_rewards_a}')
 					
-					plot_metrics[a] = total_rewards_a / total_episodes_a
+					# plot_metrics[a] = total_rewards_a / total_episodes_a
+					plot_metrics[a] = total_avgs / num_ep
+
+				# print(f'plot metrics after calc: {plot_metrics}')
 
 				# Update the live plot for the total average episodic return
 				avg_ep_rews_total = np.mean([plot_metrics[a] for a in range(self.num_agents)])
-				self._update_live_plot(ax_total, line_total, i_so_far, avg_ep_rews_total, i_so_far)
+				self._update_live_plot(ax_total, line_total, i_so_far, avg_ep_rews_total, i_so_far, "total", self.csv_filename_cum)
 
 				# Update the live plot for each agent's average episodic return
 				for agent_id, line in agent_lines.items():
 					avg_ep_rews_agent = plot_metrics[agent_id]
-					self._update_live_plot(ax_agents, line, i_so_far, avg_ep_rews_agent, i_so_far)
+					self._update_live_plot(ax_agents, line, i_so_far, avg_ep_rews_agent, i_so_far, agent_id, self.csv_filename_per_agent)
 					# print(f"avg_ep_rews_agent for agent {agent_id}:", avg_ep_rews_agent)
 
 
@@ -440,7 +469,7 @@ class PPO:
 
 		return batch_rtgs
 		
-	def _update_live_plot(self, ax, line, x, y, iteration):
+	def _update_live_plot(self, ax, line, x, y, iteration, agent_id, csv_filename):
 		if not line:
 			# If the line does not exist, create a new line
 			line, = ax.plot([], [], label='Total Average Episodic Return')
@@ -451,6 +480,15 @@ class PPO:
 		ax.relim()  # Recalculate limits
 		ax.autoscale_view()  # Autoscale the view
 		ax.figure.canvas.draw()
+
+		
+		# Save data to CSV
+		with open(csv_filename, 'a', newline='') as csvfile:
+			writer = csv.writer(csvfile)
+			if agent_id != 'total': 
+				writer.writerow([iteration, agent_id, y])
+			else: 
+				writer.writerow([iteration, y])
 
 
 
