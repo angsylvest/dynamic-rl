@@ -19,7 +19,7 @@ class GridWorldEnv(gym.Env):
 
         self.num_agents = num_agents
         self.obs_type = obs_type
-        self.introduce_time_delay = time_delay
+        self.introduce_time_delay = True # time_delay # assume this is norm s
         self.nonholonomic = nonholonomic
         self.gifting = gifting
 

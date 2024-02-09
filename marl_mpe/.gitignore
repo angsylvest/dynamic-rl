@@ -4,6 +4,6 @@
 # Ignore files with .log extension
 *.log
 
-# Ignore all files in the "data" directory
+# Ignore all files in the "checkpoints" directory
 checkpoints/
 
