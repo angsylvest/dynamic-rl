@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import random 
 
 
-class GridWorldEnv(gym.Env):
+class MultiThroughWay(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
     def __init__(self, render_mode=None, size=10, num_agents = 1, obs_type = "simple pos", time_delay = False, nonholonomic = False, gifting = False):
@@ -33,7 +33,31 @@ class GridWorldEnv(gym.Env):
         # Generate dark random colors for each agent
         # TODO: make so this doesn't need to be hardcoded
         self.agent_colors = [(0, 0, 255), (255, 0, 0)]
-        
+
+        self.corridor_spacing = 0
+        self.corridor_width = 1
+        self.corridor_length = 1
+
+        # Define corridor positions
+        self.valid_positions = set()
+
+        # Generate vertical corridor positions
+        start_column = self.size // 2
+        for y in range(self.size):
+            for x in range(start_column, start_column + self.corridor_length):
+                corridor_positions = {(x, y)}
+                if not any(pos in self.valid_positions for pos in corridor_positions):
+                    self.valid_positions.update(corridor_positions)
+
+        # Generate horizontal corridor positions
+        start_row = random.randint(0, self.size - self.corridor_length - 1)
+        for x in range(self.size):
+            for y in range(start_row, start_row + self.corridor_length):
+                corridor_positions = {(x, y)}
+                if not any(pos in self.valid_positions for pos in corridor_positions):
+                    self.valid_positions.update(corridor_positions)
+
+
         if not self.gifting: 
             self.action_space = [
                 spaces.Discrete(4) for _ in range(self.num_agents)
@@ -197,6 +221,7 @@ class GridWorldEnv(gym.Env):
         for i in range(self.num_agents): 
             # Choose the agent's location uniformly at random
             agent_location = self.np_random.randint(0, self.size, size=2, dtype=int)
+            print(f'random agent location: {agent_location}')
 
             # We will sample the target's location randomly until it does not coincide with the agent's location
             # Also will check to make sure locations don't overlap with others 
@@ -440,6 +465,21 @@ class GridWorldEnv(gym.Env):
                 width=3,
             )
 
+        for x in range(self.size):
+            for y in range(self.size):
+                if (x, y) not in self.valid_positions:
+                    # Fill the corridor grid spaces with black color
+                    pygame.draw.rect(
+                        canvas,
+                        (0, 0, 0),  # Black color
+                        pygame.Rect(
+                            pix_square_size * x,
+                            pix_square_size * y,
+                            pix_square_size,
+                            pix_square_size,
+                        ),
+                    )
+
         if self.render_mode == "human":
             self.window.blit(canvas, canvas.get_rect())
             pygame.event.pump()
@@ -449,6 +489,7 @@ class GridWorldEnv(gym.Env):
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
             )
+        
 
 
     def close(self):
@@ -459,7 +500,7 @@ class GridWorldEnv(gym.Env):
 
 
 def test_render(): 
-    env = GridWorldEnv(render_mode = "rgb_array", num_agents=2, time_delay=True, nonholonomic=False)
+    env = MultiThroughWay(render_mode = "rgb_array", num_agents=2, time_delay=True, nonholonomic=False)
     print('env created')
     obs = env.reset()
     print(env.step(actions=[0, 4]))
