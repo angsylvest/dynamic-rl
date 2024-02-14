@@ -49,6 +49,7 @@ class Corridor(gym.Env):
                     self.valid_positions.update(corridor_positions)
                     break
 
+        self.start_row = start_row
         # Choose a random position in the corridor to place the gap
         gap_position = random.randint(0, self.size - self.corridor_length), start_row + 1
         self.valid_positions.add(gap_position)
@@ -223,20 +224,17 @@ class Corridor(gym.Env):
 
         for i in range(self.num_agents): 
             # Choose the agent's location uniformly at random
-            agent_location = self.np_random.randint(0, self.size, size=2, dtype=int)
-            print(f'random agent location: {agent_location}')
+            if i == 0: 
+                agent_location = (0, self.start_row)
+                target_location = (self.size - 1, self.start_row)
+            elif i == 1:
+                agent_location = (self.size - 1, self.start_row)
+                target_location = (0, self.start_row)
 
-            # We will sample the target's location randomly until it does not coincide with the agent's location
-            # Also will check to make sure locations don't overlap with others 
+            print(f'random agent location: {agent_location} and target location: {target_location}')
 
-            target_location = agent_location
-            while np.array_equal(target_location, agent_location):
-                target_location = self.np_random.randint(
-                    0, self.size, size=2, dtype=int
-                )
-
-            self.agent_obs_info[i]["agent"] = agent_location
-            self.agent_obs_info[i]["target"] = target_location
+            self.agent_obs_info[i]["agent"] = np.array(agent_location)
+            self.agent_obs_info[i]["target"] = np.array(target_location)
 
             # random orientation (choice between (-1,0),(1,0),(0,1),(0,-1))
             orientations = [(-1, 0), (1, 0), (0, 1), (0, -1)]
@@ -279,7 +277,6 @@ class Corridor(gym.Env):
 
         # Calculate the total reward
         total_reward = self.goal_reward - collision_penalty_sum + proximity_reward # self.proximity_reward / (distance_to_goal + 1e-10)
-        # print(f'reward update info: total reward: {total_reward} \n for goal reward: {self.goal_reward} with collision penalty {collision_penalty_sum} \n prox output: {self.proximity_reward / (distance_to_goal + 1e-10)}')
         return total_reward
 
 
@@ -345,8 +342,14 @@ class Corridor(gym.Env):
                     clipped_x = np.clip(new_x, 0, self.size - 1)
                     clipped_y = np.clip(new_y, 0, self.size - 1)
 
+                    # Check if the new location is valid
+                    new_loc = (clipped_x, clipped_y)
+                    if new_loc in self.valid_positions:
+                        # Update the agent's location
+                        self.agent_obs_info[agent_id]["agent"] = new_loc
+
                     # Update the observation_space
-                    self.agent_obs_info[agent_id]["agent"] = np.array([clipped_x, clipped_y])
+                    # self.agent_obs_info[agent_id]["agent"] = np.array([clipped_x, clipped_y])
 
                     if self.introduce_time_delay:
                         # add time delay once given new action before moving on to next action
@@ -423,6 +426,20 @@ class Corridor(gym.Env):
                     (pix_square_size, pix_square_size),
                 ),
             )
+
+        # Draw the targets and agents using unique colors for each agent
+        for i in range(self.num_agents):
+            target_color = self.agent_colors[i]
+            agent_color = self.agent_colors[i]
+
+            # pygame.draw.rect(
+            #     canvas,
+            #     target_color,
+            #     pygame.Rect(
+            #         pix_square_size * self.agent_obs_info[i]["target"],
+            #         (pix_square_size, pix_square_size),
+            #     ),
+            # )
 
             pygame.draw.circle(
                 canvas,
