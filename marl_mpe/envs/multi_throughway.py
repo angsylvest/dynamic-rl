@@ -220,14 +220,19 @@ class MultiThroughWay(gym.Env):
 
         for i in range(self.num_agents): 
             # Choose the agent's location uniformly at random
+            
             agent_location = self.np_random.randint(0, self.size, size=2, dtype=int)
+            print(f'self.valid_positions: {self.valid_positions} and agent_location: {agent_location}')
+            while tuple(agent_location) not in self.valid_positions:
+                agent_location = self.np_random.randint(0, self.size, size=2, dtype=int)
+
             print(f'random agent location: {agent_location}')
 
             # We will sample the target's location randomly until it does not coincide with the agent's location
             # Also will check to make sure locations don't overlap with others 
 
             target_location = agent_location
-            while np.array_equal(target_location, agent_location):
+            while np.array_equal(target_location, agent_location) and tuple(target_location) not in self.valid_positions:
                 target_location = self.np_random.randint(
                     0, self.size, size=2, dtype=int
                 )
@@ -342,8 +347,14 @@ class MultiThroughWay(gym.Env):
                     clipped_x = np.clip(new_x, 0, self.size - 1)
                     clipped_y = np.clip(new_y, 0, self.size - 1)
 
+                    # Check if the new location is valid
+                    new_loc = (clipped_x, clipped_y)
+                    if new_loc in self.valid_positions:
+                        # Update the agent's location
+                        self.agent_obs_info[agent_id]["agent"] = new_loc
+
                     # Update the observation_space
-                    self.agent_obs_info[agent_id]["agent"] = np.array([clipped_x, clipped_y])
+                    # self.agent_obs_info[agent_id]["agent"] = np.array([clipped_x, clipped_y])
 
                     if self.introduce_time_delay:
                         # add time delay once given new action before moving on to next action
@@ -407,7 +418,6 @@ class MultiThroughWay(gym.Env):
             self.window_size / self.size
         )  # The size of a single grid square in pixels
 
-        # Draw the targets and agents using unique colors for each agent
         for i in range(self.num_agents):
             target_color = self.agent_colors[i]
             agent_color = self.agent_colors[i]
@@ -420,6 +430,20 @@ class MultiThroughWay(gym.Env):
                     (pix_square_size, pix_square_size),
                 ),
             )
+
+        # Draw the targets and agents using unique colors for each agent
+        for i in range(self.num_agents):
+            target_color = self.agent_colors[i]
+            agent_color = self.agent_colors[i]
+
+            # pygame.draw.rect(
+            #     canvas,
+            #     target_color,
+            #     pygame.Rect(
+            #         pix_square_size * self.agent_obs_info[i]["target"],
+            #         (pix_square_size, pix_square_size),
+            #     ),
+            # )
 
             pygame.draw.circle(
                 canvas,
