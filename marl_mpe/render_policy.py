@@ -19,7 +19,7 @@ time_delay = False
 # obs_dim = 10 if share_orientation else 6
 # obs_dim = obs_dim + 5 if time_delay else obs_dim
 obs_dim = 8 # 13 # 8 # 13
-act_dim = 5 # if gifting else 4 
+act_dim = 4 #5 # if gifting else 4 
 num_agents = 2
 
 # Define the actor and critic models

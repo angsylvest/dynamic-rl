@@ -24,10 +24,10 @@ class GridWorldEnv(gym.Env):
         self.gifting = gifting
 
         # coordination-specific info (incorporates flocking vs compliment actions in action space)
-        self.nature_based = True 
+        self.nature_based = False 
 
         # reward info
-        self.collision_radius_threshold = 2.0
+        self.collision_radius_threshold = 1.0
         self.collision_penalty = 1.0
         self.proximity_reward = 0.5
         self.goal_reward = 1.0
@@ -238,6 +238,9 @@ class GridWorldEnv(gym.Env):
         distance_to_goal = np.linalg.norm(current_loc - target)
         distance_to_goal = np.clip(distance_to_goal, a_min=1e-10, a_max=None)
 
+        # Check if the agent is on the goal
+        on_goal = distance_to_goal < 1e-5  # You might need to adjust this threshold
+
         # Check for collisions with other agents
         collision_penalty_sum = 0.0
 
@@ -253,8 +256,10 @@ class GridWorldEnv(gym.Env):
                 if distance_to_other_agent < self.collision_radius_threshold:
                     collision_penalty_sum += self.collision_penalty
 
+
         # Calculate the total reward
-        total_reward = self.goal_reward - collision_penalty_sum + proximity_reward # self.proximity_reward / (distance_to_goal + 1e-10)
+        total_reward = self.goal_reward - collision_penalty_sum + proximity_reward if on_goal else -collision_penalty_sum + proximity_reward
+         # self.proximity_reward / (distance_to_goal + 1e-10)
         # print(f'reward update info: total reward: {total_reward} \n for goal reward: {self.goal_reward} with collision penalty {collision_penalty_sum} \n prox output: {self.proximity_reward / (distance_to_goal + 1e-10)}')
         return total_reward
 
