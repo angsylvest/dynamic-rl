@@ -19,13 +19,13 @@ time_delay = False
 # obs_dim = 10 if share_orientation else 6
 # obs_dim = obs_dim + 5 if time_delay else obs_dim
 obs_dim = 8 # 13 # 8 # 13
-act_dim = 5 if gifting else 4 
+act_dim = 5 # if gifting else 4 
 num_agents = 2
 
 # Define the actor and critic models
 actors = [FeedForwardNN(obs_dim, act_dim) for _ in range(num_agents)]
 
-parent_path = "/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/simple_pos + gifting_False + time_delay_False_het"
+parent_path = "/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/simple_pos + gifting_False + time_delay_False_usingCoord"
 
 # Get a list of all files in the parent path
 all_files = os.listdir(parent_path)

@@ -135,6 +135,6 @@ if __name__ == '__main__':
     gifting = False 
     share_orientation = False
     # policy_type = f"simple_pos + time_delay_{time_delay}" # just way to label policies 
-    policy_type = f"simple_pos + gifting_{gifting} + time_delay_{time_delay}"
+    policy_type = f"simple_pos + gifting_{gifting} + time_delay_{time_delay}_usingCoord"
     args = get_args() # Parse arguments from command line
     main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic, gifting, share_orientation)

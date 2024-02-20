@@ -23,6 +23,9 @@ class GridWorldEnv(gym.Env):
         self.nonholonomic = nonholonomic
         self.gifting = gifting
 
+        # coordination-specific info (incorporates flocking vs compliment actions in action space)
+        self.nature_based = True 
+
         # reward info
         self.collision_radius_threshold = 2.0
         self.collision_penalty = 1.0
@@ -34,7 +37,7 @@ class GridWorldEnv(gym.Env):
         # TODO: make so this doesn't need to be hardcoded
         self.agent_colors = [(0, 0, 255), (255, 0, 0)]
         
-        if not self.gifting: 
+        if not self.gifting and not self.nature_based: 
             self.action_space = [
                 spaces.Discrete(4) for _ in range(self.num_agents)
             ]
@@ -54,6 +57,7 @@ class GridWorldEnv(gym.Env):
                     "neigh_orient": spaces.Box(0, size - 1, shape=(4,), dtype=int),
                     "neigh_remaining_steps": spaces.Box(0, size - 1, shape=(4,), dtype=int),
                     "relative_goal_pos": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+                    "other_agent_act": spaces.Box(0, size - 1, shape=(num_agents,), dtype=int),
                 }
         ) for _ in range(self.num_agents)
         ]
@@ -65,8 +69,8 @@ class GridWorldEnv(gym.Env):
              "orientation": np.array([0,0]),
              "ultrasonic": np.array([0,0,0,0]), # N, W, E, S 
              "neigh_orient": np.array([0,0,0,0]), # ←, ↑, →, ↓ (1, 2, 3, 4) else 0 if no agent
-             "neigh_remaining_steps": np.array([0,0,0,0]) # incorporate speed heterogeneity
-
+             "neigh_remaining_steps": np.array([0,0,0,0]), # incorporate speed heterogeneity
+             "other_agent_act": np.zeros(num_agents)
              }
 
              for i in range(self.num_agents)
@@ -287,19 +291,36 @@ class GridWorldEnv(gym.Env):
         infos = []
 
         # print(f'actions: {actions}')
-
         # if gifting, first want to verify reward from nearest agent
-        check = False # initially false until validated 
-        if self.gifting: 
-            check, list = self.validate_gifting(actions)
-            print(f'gifting output: {list}')
+        # check = False # initially false until validated 
+        # if self.gifting: 
+        #     check, list = self.validate_gifting(actions)
+        #     print(f'gifting output: {list}')
             
-
+        agent_id_dict = {0: 1, 1:0}
+        leader_dict = {0: "leader", 1: "follower"}
         for agent_id, action in enumerate(actions):
+            reward_penalty = 0
 
             if not self.introduce_time_delay or ((self.agent_obs_info[agent_id]["remaining_steps"] < 0) and self.introduce_time_delay):
- 
-                direction = self._action_to_direction[action]
+                act_agent = action 
+
+                if self.nature_based: 
+                    if action == 4: # mimic neighboring agent 
+                       # TODO: need way to handle if they are both in state 
+                        other_act = agent_id_dict[agent_id]
+                        act_agent = other_act 
+
+                        if other_act == 4 and leader_dict[agent_id] == "leader": 
+                           # need one to take leader role, penalize trying to copy  
+                            reward_penalty = -1.2 
+                        elif other_act == 5 and leader_dict[agent_id] == "follower": 
+                            # get some reward from agent for demuring
+                            reward_penalty = 0.5
+
+                    
+
+                direction = self._action_to_direction[act_agent]
                 # print(f'self.agent_obs_info: {self.agent_obs_info} for agent_id {agent_id}')
                 loc = self.agent_obs_info[agent_id]["agent"]
 
@@ -331,14 +352,15 @@ class GridWorldEnv(gym.Env):
                 # print(f'decrementing steps, current state {self.agent_obs_info[agent_id]["remaining_steps"] }')
             
             # TODO: hard-coded, must make more logical 
-            if check and actions[agent_id] == 4: 
-                if list[agent_id] != "NA": 
-                    current_reward = 0.25 # retroactive reward 
-                    print(f'retroactive reward granted ')
-                else: 
-                    current_reward = self.reward(agent_id)*0.25
-            else: 
-                current_reward = self.reward(agent_id) # TODO: update reward function
+            # if check and actions[agent_id] == 4: 
+            #     if list[agent_id] != "NA": 
+            #         current_reward = 0.25 # retroactive reward 
+            #         print(f'retroactive reward granted ')
+            #     else: 
+            #         current_reward = self.reward(agent_id)*0.25
+            # else: 
+                
+            current_reward = self.reward(agent_id) + reward_penalty # TODO: update reward function
 
             terminated_agent = np.array_equal(
                 self.agent_obs_info[agent_id]["agent"] , self.agent_obs_info[agent_id]["target"]
@@ -477,5 +499,5 @@ def test_render():
 def main():
     test_render()
 
-main()
+# main()
             
