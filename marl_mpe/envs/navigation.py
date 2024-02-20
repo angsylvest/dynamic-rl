@@ -259,8 +259,6 @@ class GridWorldEnv(gym.Env):
 
         # Calculate the total reward
         total_reward = self.goal_reward - collision_penalty_sum + proximity_reward if on_goal else -collision_penalty_sum + proximity_reward
-         # self.proximity_reward / (distance_to_goal + 1e-10)
-        # print(f'reward update info: total reward: {total_reward} \n for goal reward: {self.goal_reward} with collision penalty {collision_penalty_sum} \n prox output: {self.proximity_reward / (distance_to_goal + 1e-10)}')
         return total_reward
 
 
