@@ -232,13 +232,16 @@ class MultiThroughWay(gym.Env):
             # Also will check to make sure locations don't overlap with others 
 
             target_location = agent_location
-            while np.array_equal(target_location, agent_location) and tuple(target_location) not in self.valid_positions:
+            while np.array_equal(target_location, agent_location) or tuple(target_location) not in self.valid_positions:
                 target_location = self.np_random.randint(
                     0, self.size, size=2, dtype=int
                 )
 
+
             self.agent_obs_info[i]["agent"] = agent_location
             self.agent_obs_info[i]["target"] = target_location
+
+            print(f'target location{target_location}')
 
             # random orientation (choice between (-1,0),(1,0),(0,1),(0,-1))
             orientations = [(-1, 0), (1, 0), (0, 1), (0, -1)]
@@ -527,7 +530,7 @@ def test_render():
     env = MultiThroughWay(render_mode = "rgb_array", num_agents=2, time_delay=True, nonholonomic=False)
     print('env created')
     obs = env.reset()
-    print(env.step(actions=[0, 4]))
+    # print(env.step(actions=[0, 4]))
     print('obs reset')
     screen = env.render()
 
