@@ -82,7 +82,6 @@ class HarvestEnv(MapEnv):
         """See parent class"""
         # spawn the apples
         new_apples = self.spawn_apples()
-        print(f'new apples: {new_apples}')
         self.update_map(new_apples)
 
     def spawn_apples(self):

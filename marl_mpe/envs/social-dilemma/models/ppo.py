@@ -73,7 +73,7 @@ class PPO:
 			self.obs_dim = obs_size # obs_size_per_agent
 			self.act_dim = env.action_space.n
 
-			print(f'updated obs_dim: {self.obs_dim}')
+			# print(f'updated obs_dim: {self.obs_dim}')
 		
 		else: 
 			if self.share_orientation: 
@@ -104,8 +104,6 @@ class PPO:
 			writer = csv.writer(csvfile)
 			writer.writerow(['Iteration', 'Average_Reward'])
 
-		print('obs dim ', self.obs_dim)
-		print('act_dim', self.act_dim)
 
 		# separate each by agent (IPPO, will allow for async updates)
 		self.num_agents = num_agents 
@@ -394,11 +392,6 @@ class PPO:
 							"prev_visible_agents": obs[agent_id]["prev_visible_agents"]
 						}
 
-						print("curr_obs size:", agent_observation["curr_obs"].shape)
-						print("other_agent_actions size:", agent_observation["other_agent_actions"].shape)
-						print("visible_agents size:", agent_observation["visible_agents"].shape)
-						print("prev_visible_agents size:", agent_observation["prev_visible_agents"].shape)
-
 						# Concatenate the observation components
 						concatenated_observation = np.concatenate((
 							agent_observation["curr_obs"],
@@ -464,20 +457,41 @@ class PPO:
 					actions.append(int(action))
 					log_probs.append(log_prob)
 
-				# print('actions : ', actions)
-				obs, rews, dones, _, _ = self.env.step(actions)
+
+				if self.env_type == 'social-dilemma': 
+					# update actions to be compatible with map_env
+					act = {}
+					for i in range(self.num_agents): 
+						agent_id = f"agent-{i}"
+						act[agent_id] = actions[i]
+
+					actions = act
+
+					obs, rews, dones, _ = self.env.step(actions)
+
+				else:
+					obs, rews, dones, _, _ = self.env.step(actions)
 
 				# print(f'info collected so far: \n obs {obs} \n rews {rews} \n log_probs {log_probs} \n ep_rews {ep_rews}')
 
 				# Track recent reward, action, and action log probability
 				for i in range(self.num_agents): 
+					agent_id = f"agent-{i}"
 					# for each agent dict, add rews collected for that episode 
-					ep_rews[i].append(rews[i])
-					# batch_rews[i].extend(ep_rews[i])
 
-					batch_acts[i].append(actions[i])
-					# print(f'log info : {log_probs[i].item()}')
-					batch_log_probs[i].append(log_probs[i].item())
+					if self.env_type == 'social-dilemma': 
+						ep_rews[i].append(rews[agent_id])
+						batch_acts[i].append(actions[agent_id])
+						batch_log_probs[i].append(log_probs[i].item())
+
+					else: 
+
+						ep_rews[i].append(rews[i])
+						# batch_rews[i].extend(ep_rews[i])
+
+						batch_acts[i].append(actions[i])
+						# print(f'log info : {log_probs[i].item()}')
+						batch_log_probs[i].append(log_probs[i].item())
 
 					# dones.append(done)
 
