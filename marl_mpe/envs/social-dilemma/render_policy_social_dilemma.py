@@ -9,7 +9,7 @@ from harvest import HarvestEnv
 
 obs_dim = 687 
 act_dim = 8 
-num_agents = 3
+num_agents = 5
 
 # Define the actor and critic models
 actors = [FeedForwardNN(obs_dim, act_dim) for _ in range(num_agents)]
@@ -30,7 +30,7 @@ for agent_idx in range(num_agents):
 for actor in actors: 
     actor.eval()
 
-env = HarvestEnv(num_agents=3,
+env = HarvestEnv(num_agents=num_agents,
                 return_agent_actions=True,
                 use_collective_reward=True,
                 inequity_averse_reward=True,
@@ -40,25 +40,26 @@ env = HarvestEnv(num_agents=3,
 
 # Initialize the environment
 states = env.reset()
+obs = states
+print(f'obs shape \n {obs["agent-0"]["curr_obs"].shape} \n {obs["agent-0"]["other_agent_actions"].shape} \n {obs["agent-0"]["visible_agents"].shape} \n {obs["agent-0"]["prev_visible_agents"].shape}')
 done = [False] * num_agents
 
 # Set up the plot for animation
 fig, ax = plt.subplots()
-
-print(f'env rendered: {env.render()}')
-im = ax.imshow(env.render().astype(float), animated=True)
+im = ax.imshow(env.render(mode="rgb").astype(float), animated=True)
 
 # Function to update the plot at each frame
 def update(frame):
     actions = []
     for agent_idx in range(num_agents):
         obs = states 
+        agent_id = f"agent-{agent_idx}"
 
         agent_observation = {
-        "curr_obs": obs[agent_idx]["curr_obs"].flatten(),
-        "other_agent_actions": obs[agent_idx]["other_agent_actions"],
-        "visible_agents": obs[agent_idx]["visible_agents"],
-        "prev_visible_agents": obs[agent_idx]["prev_visible_agents"]
+        "curr_obs": obs[agent_id]["curr_obs"].flatten(),
+        "other_agent_actions": obs[agent_id]["other_agent_actions"],
+        "visible_agents": obs[agent_id]["visible_agents"],
+        "prev_visible_agents": obs[agent_id]["prev_visible_agents"]
         }
 
         # Concatenate the observation components
@@ -80,11 +81,18 @@ def update(frame):
             action = dist.sample()
             actions.append(action.item())
 
+    act = {}
+    for i in range(num_agents): 
+        agent_id = f"agent-{i}"
+        act[agent_id] = actions[i]
+
+    actions = act
+
     # Take a step in the environment
     next_state, rewards, dones, infos = env.step(actions)
 
     # Render the environment
-    screen = env.render().astype(float)
+    screen = env.render(mode="rgb").astype(float)
 
     # Update the plot
     im.set_array(screen)

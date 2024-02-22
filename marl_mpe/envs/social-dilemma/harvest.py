@@ -132,7 +132,7 @@ class HarvestEnv(MapEnv):
     
 
 def main(): # testing render here 
-    env = HarvestEnv(num_agents=5,
+    env = HarvestEnv(num_agents=3,
                 return_agent_actions=True,
                 use_collective_reward=True,
                 inequity_averse_reward=True,
@@ -141,9 +141,11 @@ def main(): # testing render here
     
     # env.custom_reset() # will generate apples 
     # env.custom_map_update()
-    env.reset()
+    states = env.reset()
+    obs = states
+    print(f'obs shape \n {obs["agent-0"]["curr_obs"].shape} \n {obs["agent-0"]["other_agent_actions"].shape} \n {obs["agent-0"]["visible_agents"].shape} \n {obs["agent-0"]["prev_visible_agents"].shape}')
 
-    env.render(filename="test.png")
+    env.render()
      
 
 

@@ -384,6 +384,7 @@ class PPO:
 						# Get the observation components for the specified agent
 						agent_id = f"agent-{i}"
 						# print(f'curr_obs: {obs[agent_id]}')
+						# print(f'obs shape \n {obs[agent_id]["curr_obs"].shape} \n {obs[agent_id]["other_agent_actions"].shape} \n {obs[agent_id]["visible_agents"].shape} \n {obs[agent_id]["prev_visible_agents"].shape}')
 						
 						agent_observation = {
 							"curr_obs": obs[agent_id]["curr_obs"].flatten(),

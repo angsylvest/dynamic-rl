@@ -20,7 +20,7 @@ print(f'obs space {type(obs_space)} and action space {type(act_space)}')
 
 env_type = "social-dilemma" # change to something else if want to use simpler env
 mode = "train"
-num_agents = 3
+# num_agents = 3
 obs_types = ["simple pos", "simple pos and local occupancy", "simple pos and vector occupancy"]
 obs_type = obs_types[0]
 time_delay = False
