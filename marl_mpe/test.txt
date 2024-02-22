@@ -1,0 +1,14 @@
+obs space <class 'gym.spaces.dict.Dict'> and action space <class 'discrete_with_d_type.DiscreteWithDType'>
+updated obs_dim: 687
+obs dim  687
+act_dim 8
+Learning... Running 1600 timesteps per episode, 4800 timesteps per batch for a total of 200000000 timesteps
+new apples: []
+curr_obs size: (675,)
+other_agent_actions size: (4,)
+visible_agents size: (4,)
+prev_visible_agents size: (4,)
+curr_obs size: (675,)
+other_agent_actions size: (4,)
+visible_agents size: (4,)
+prev_visible_agents size: (4,)

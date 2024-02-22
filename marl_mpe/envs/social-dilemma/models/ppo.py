@@ -33,10 +33,20 @@ class PPO:
 			Returns:
 				None
 		"""
+		# print(f'current env: {env}')
 
-		print(f'ppo env info: {type(env.observation_space[0])} and act space: {type(env.action_space[0])}')
-		assert(type(env.observation_space[0]) == gym.spaces.dict.Dict)
-		assert(type(env.action_space[0]) == gym.spaces.discrete.Discrete)
+		# Extract environment information
+		self.env = env
+		self.env_type = env_type
+
+		if self.env_type == 'social-dilemma': 
+			assert(type(env.observation_space) == gym.spaces.dict.Dict)
+			# assert(type(env.action_space) == gym.spaces.discrete.Discrete)
+
+		else: 
+			print(f'ppo env info: {type(env.observation_space[0])} and act space: {type(env.action_space[0])}')
+			assert(type(env.observation_space[0]) == gym.spaces.dict.Dict)
+			assert(type(env.action_space[0]) == gym.spaces.discrete.Discrete)
 
 		# Initialize hyperparameters for training with PPO
 		self._init_hyperparameters(hyperparameters)
@@ -48,17 +58,35 @@ class PPO:
 		self.env = env
 		self.env_type = env_type
 		# self.obs_dim = env.observation_space[0].shape[0]
-		
-		if self.share_orientation: 
-			self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] + env.observation_space[0]["neigh_orient"].shape[0] + env.observation_space[0]["relative_goal_pos"].shape[0]
-		else: 
-			self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] + env.observation_space[0]["relative_goal_pos"].shape[0]
 
-		if self.time_delay: 
-			self.obs_dim += env.observation_space[0]["remaining_steps"].shape[0] + env.observation_space[0]["neigh_remaining_steps"].shape[0]
+
+		if self.env_type == 'social-dilemma': 
+			# update obs_dim and act_dim 
+			obs_size = (
+				np.prod(env.observation_space["curr_obs"].shape) +
+				np.prod(env.observation_space["other_agent_actions"].shape) +
+				np.prod(env.observation_space["visible_agents"].shape) +
+				np.prod(env.observation_space["prev_visible_agents"].shape)
+			)
+			
+			# Account for multiple agents by multiplying by the number of agents
+			self.obs_dim = obs_size # obs_size_per_agent
+			self.act_dim = env.action_space.n
+
+			print(f'updated obs_dim: {self.obs_dim}')
 		
-		# self.act_dim = env.action_space[0].shape[0]
-		self.act_dim = env.action_space[0].n # is 4 now
+		else: 
+			if self.share_orientation: 
+				self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] + env.observation_space[0]["neigh_orient"].shape[0] + env.observation_space[0]["relative_goal_pos"].shape[0]
+			else: 
+				self.obs_dim = env.observation_space[0]["agent"].shape[0] + env.observation_space[0]["ultrasonic"].shape[0] + env.observation_space[0]["relative_goal_pos"].shape[0]
+
+			if self.time_delay: 
+				self.obs_dim += env.observation_space[0]["remaining_steps"].shape[0] + env.observation_space[0]["neigh_remaining_steps"].shape[0]
+			
+			# self.act_dim = env.action_space[0].shape[0]
+			self.act_dim = env.action_space[0].n # is 4 now
+
 
 		self.policy_type = policy_type
 		self.checkpoint_dir = checkpoint_dir
@@ -328,7 +356,10 @@ class PPO:
 			# print(f'initial ep_rews: {ep_rews}')
 
 			# Reset the environment. sNote that obs is short for observation. 
-			obs, _ = self.env.reset() # is a list of agents, each is a dict of obs + info
+			if self.env_type != 'social-dilemma': 
+				obs, _ = self.env.reset() # is a list of agents, each is a dict of obs + info
+			else: 
+				obs = self.env.reset()
 
 			# print(f'obs after env reset {obs}')
 
@@ -351,37 +382,83 @@ class PPO:
 				# for each agent, append current obs in respective dict 
 				# TODO: MAKE LESS UGLY/CLEAN
 				for i in range(self.num_agents): 
-					if self.share_orientation: 
-						if self.time_delay: 
-							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], np.array(obs[i]["neigh_orient"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"], obs[i]["relative_goal_pos"]))))
-						else: 
-							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], np.array(obs[i]["neigh_orient"], obs[i]["relative_goal_pos"]))))
+					if self.env_type == 'social-dilemma': 
+						# Get the observation components for the specified agent
+						agent_id = f"agent-{i}"
+						# print(f'curr_obs: {obs[agent_id]}')
+						
+						agent_observation = {
+							"curr_obs": obs[agent_id]["curr_obs"].flatten(),
+							"other_agent_actions": obs[agent_id]["other_agent_actions"],
+							"visible_agents": obs[agent_id]["visible_agents"],
+							"prev_visible_agents": obs[agent_id]["prev_visible_agents"]
+						}
+
+						print("curr_obs size:", agent_observation["curr_obs"].shape)
+						print("other_agent_actions size:", agent_observation["other_agent_actions"].shape)
+						print("visible_agents size:", agent_observation["visible_agents"].shape)
+						print("prev_visible_agents size:", agent_observation["prev_visible_agents"].shape)
+
+						# Concatenate the observation components
+						concatenated_observation = np.concatenate((
+							agent_observation["curr_obs"],
+							agent_observation["other_agent_actions"],
+							agent_observation["visible_agents"],
+							agent_observation["prev_visible_agents"]
+						))
+
+						batch_obs[i].append(concatenated_observation)
 
 					else: 
-						if self.time_delay: 
-							# print(f'shapes of each to review: remaining steps {obs[i]["remaining_steps"]} neigh steps left: {obs[i]["neigh_remaining_steps"].shape} compared to {obs[i]["agent"]}')
-							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"], obs[i]["relative_goal_pos"]))) 
-							
+						if self.share_orientation: 
+							if self.time_delay: 
+								batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], np.array(obs[i]["neigh_orient"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"], obs[i]["relative_goal_pos"]))))
+							else: 
+								batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], np.array(obs[i]["neigh_orient"], obs[i]["relative_goal_pos"]))))
+
 						else: 
-							batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["relative_goal_pos"])))
+							if self.time_delay: 
+								# print(f'shapes of each to review: remaining steps {obs[i]["remaining_steps"]} neigh steps left: {obs[i]["neigh_remaining_steps"].shape} compared to {obs[i]["agent"]}')
+								batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"], obs[i]["relative_goal_pos"]))) 
+								
+							else: 
+								batch_obs[i].append(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["relative_goal_pos"])))
 
 
 				# Calculate action and make a step in the env. 
 				for i in range(self.num_agents): 
-					# ob = obs[i]["agent"]
-					# print(f'current obs: {ob} for agent {i}')
 
-					if self.share_orientation: 
+					if self.share_orientation and self.env_type != 'social-dilemma': 
 						if self.time_delay: 
 							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["neigh_orient"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"], obs[i]["relative_goal_pos"])), i)
 						else: 
 							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["neigh_orient"], obs[i]["relative_goal_pos"])), i)
-					else: 
+					elif not self.share_orientation and self.env_type != 'social-dilemma': 
 						if self.time_delay: 
 							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["remaining_steps"], obs[i]["neigh_remaining_steps"], obs[i]["relative_goal_pos"])), i)
 						else: 
 							# print(f'size of relative pos: {obs[i]["relative_goal_pos"]}')
 							action, log_prob = self.get_action(np.concatenate((obs[i]["agent"], obs[i]["ultrasonic"], obs[i]["relative_goal_pos"])), i)
+
+					# TODO: need to understand how obs formatted so that we can correctly feed it to neural network 
+					elif self.env_type == 'social-dilemma':
+						agent_id = f"agent-{i}"
+						agent_observation = {
+							"curr_obs": obs[agent_id]["curr_obs"].flatten(),
+							"other_agent_actions": obs[agent_id]["other_agent_actions"],
+							"visible_agents": obs[agent_id]["visible_agents"],
+							"prev_visible_agents": obs[agent_id]["prev_visible_agents"]
+						}
+
+						# Concatenate the observation components
+						concatenated_observation = np.concatenate([
+							agent_observation["curr_obs"],
+							agent_observation["other_agent_actions"],
+							agent_observation["visible_agents"],
+							agent_observation["prev_visible_agents"]
+						])
+
+						action, log_prob = self.get_action(concatenated_observation, i)
 
 					# print('action', action)
 					actions.append(int(action))

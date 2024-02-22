@@ -142,8 +142,9 @@ def main(): # testing render here
     
     env.custom_reset() # will generate apples 
     env.custom_map_update()
+
     env.render(filename="test.png")
      
 
 
-main()
+# main()
