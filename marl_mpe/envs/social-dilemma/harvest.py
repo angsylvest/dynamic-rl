@@ -139,8 +139,9 @@ def main(): # testing render here
                 alpha=0.0,
                 beta=0.0)
     
-    env.custom_reset() # will generate apples 
-    env.custom_map_update()
+    # env.custom_reset() # will generate apples 
+    # env.custom_map_update()
+    env.reset()
 
     env.render(filename="test.png")
      
