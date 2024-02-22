@@ -515,6 +515,7 @@ class PPO:
 
 		# convert each obs per agent into tensor 
 		for i in range(self.num_agents):
+
 			batch_obs[i] = torch.tensor(batch_obs[i], dtype=torch.float)
 			batch_acts[i] = torch.tensor(batch_acts[i], dtype=torch.float)
 			batch_log_probs[i] = torch.tensor(batch_log_probs[i], dtype=torch.float).flatten()
