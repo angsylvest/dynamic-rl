@@ -21,7 +21,7 @@ class PPO:
 	"""
 		This is the PPO class we will use as our model in main.py
 	"""
-	def __init__(self, policy_class, env, num_agents, policy_type, checkpoint_dir, gifting, time_delay, share_orientation, env_type, **hyperparameters):
+	def __init__(self, policy_class, env, num_agents, policy_type, checkpoint_dir, gifting, time_delay, share_orientation, env_type, roles, **hyperparameters):
 		"""
 			Initializes the PPO model, including hyperparameters.
 
@@ -38,6 +38,7 @@ class PPO:
 		# Extract environment information
 		self.env = env
 		self.env_type = env_type
+		self.roles = roles
 
 		if self.env_type == 'social-dilemma': 
 			assert(type(env.observation_space) == gym.spaces.dict.Dict)
@@ -72,6 +73,7 @@ class PPO:
 			# Account for multiple agents by multiplying by the number of agents
 			self.obs_dim = obs_size # obs_size_per_agent
 			self.act_dim = env.action_space.n
+			self.act_dim_follower = env.action_space_roles.n
 
 			# print(f'updated obs_dim: {self.obs_dim}')
 		
@@ -107,10 +109,20 @@ class PPO:
 
 		# separate each by agent (IPPO, will allow for async updates)
 		self.num_agents = num_agents 
-		self.actors = [policy_class(self.obs_dim, self.act_dim) for i in range(self.num_agents)]
-		self.critics = [policy_class(self.obs_dim, 1) for i in range(self.num_agents)]
-		self.actor_optims = [Adam(self.actors[i].parameters(), lr=self.lr) for i in range(self.num_agents)]
-		self.critic_optims = [Adam(self.critics[i].parameters(), lr=self.lr) for i in range(self.num_agents)]
+
+		if self.roles: 
+			self.actors = [policy_class(self.obs_dim, self.act_dim + 2 if i % 2 == 1 else self.act_dim) for i in range(self.num_agents)]
+			self.critics = [policy_class(self.obs_dim, 1) for i in range(self.num_agents)]
+
+			self.actor_optims = [Adam(self.actors[i].parameters(), lr=self.lr) for i in range(self.num_agents)]
+			self.critic_optims = [Adam(self.critics[i].parameters(), lr=self.lr) for i in range(self.num_agents)]
+
+		else: 
+			self.actors = [policy_class(self.obs_dim, self.act_dim) for i in range(self.num_agents)]
+			self.critics = [policy_class(self.obs_dim, 1) for i in range(self.num_agents)]
+
+			self.actor_optims = [Adam(self.actors[i].parameters(), lr=self.lr) for i in range(self.num_agents)]
+			self.critic_optims = [Adam(self.critics[i].parameters(), lr=self.lr) for i in range(self.num_agents)]
 
 		# Initialize the covariance matrix used to query the actor for actions
 		self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
