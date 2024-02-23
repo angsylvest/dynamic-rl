@@ -509,7 +509,7 @@ class MapEnv(MultiAgentEnv):
         reserved_slots = []
         for agent_id, action in agent_actions.items():
             agent = self.agents[agent_id]
-            # print(f'agent id {agent_id}')
+            # print(f'agent id {agent_id} + and action {action}')
             # if 'COMPLEMENT' and 'MIMIC' not in action: 
             #     selected_action = self.all_actions[action] # does literal action 
             # TODO(ev) these two parts of the actions
@@ -531,7 +531,7 @@ class MapEnv(MultiAgentEnv):
             elif 'MIMIC' in action: 
                 # print(f'action in other_action {other_action[0]} for agent id {agent_id}')
 
-                if len(other_action[0]) != "": 
+                if other_action[0] != "": 
                     selected_action = self.all_actions[other_action[0]]
 
                     if "MOVE" in selected_action or "STAY" in selected_action:
@@ -548,7 +548,7 @@ class MapEnv(MultiAgentEnv):
 
             elif 'COMPLEMENT' in action: 
                 # print(f'action in other_action {other_action[0]} for agent id {agent_id}')
-                if len(other_action[0]) != "": 
+                if other_action[0] != "": 
                     comple_action = complement_action[other_action[0]]
                     selected_action = self.all_actions[comple_action]
 
