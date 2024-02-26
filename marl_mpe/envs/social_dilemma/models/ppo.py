@@ -60,15 +60,28 @@ class PPO:
 		self.env_type = env_type
 		# self.obs_dim = env.observation_space[0].shape[0]
 
+		self.bayes = False 
+
 
 		if self.env_type == 'social-dilemma': 
-			# update obs_dim and act_dim 
-			obs_size = (
-				np.prod(env.observation_space["curr_obs"].shape) +
-				np.prod(env.observation_space["other_agent_actions"].shape) +
-				np.prod(env.observation_space["visible_agents"].shape) +
-				np.prod(env.observation_space["prev_visible_agents"].shape)
-			)
+			if self.bayes: 
+				# update obs_dim and act_dim 
+				obs_size = (
+					np.prod(env.observation_space["curr_obs"].shape) +
+					np.prod(env.observation_space["other_agent_actions"].shape) +
+					np.prod(env.observation_space["visible_agents"].shape) +
+					np.prod(env.observation_space["prev_visible_agents"].shape) + 
+					np.prod(env.observation_space["bayes_counter"].shape)
+				)
+
+			else: 
+				# update obs_dim and act_dim 
+				obs_size = (
+					np.prod(env.observation_space["curr_obs"].shape) +
+					np.prod(env.observation_space["other_agent_actions"].shape) +
+					np.prod(env.observation_space["visible_agents"].shape) +
+					np.prod(env.observation_space["prev_visible_agents"].shape)
+				)
 			
 			# Account for multiple agents by multiplying by the number of agents
 			self.obs_dim = obs_size # obs_size_per_agent
@@ -398,12 +411,22 @@ class PPO:
 						# print(f'curr_obs: {obs[agent_id]}')
 						# print(f'obs shape \n {obs[agent_id]["curr_obs"].shape} \n {obs[agent_id]["other_agent_actions"].shape} \n {obs[agent_id]["visible_agents"].shape} \n {obs[agent_id]["prev_visible_agents"].shape}')
 						
-						agent_observation = {
-							"curr_obs": obs[agent_id]["curr_obs"].flatten(),
-							"other_agent_actions": obs[agent_id]["other_agent_actions"],
-							"visible_agents": obs[agent_id]["visible_agents"],
-							"prev_visible_agents": obs[agent_id]["prev_visible_agents"]
-						}
+						if self.bayes: 
+							agent_observation = {
+								"curr_obs": obs[agent_id]["curr_obs"].flatten(),
+								"other_agent_actions": obs[agent_id]["other_agent_actions"],
+								"visible_agents": obs[agent_id]["visible_agents"],
+								"prev_visible_agents": obs[agent_id]["prev_visible_agents"], 
+								"bayes_counter": obs[agent_id]["bayes_counter"], 
+							}
+
+						else: 
+							agent_observation = {
+								"curr_obs": obs[agent_id]["curr_obs"].flatten(),
+								"other_agent_actions": obs[agent_id]["other_agent_actions"],
+								"visible_agents": obs[agent_id]["visible_agents"],
+								"prev_visible_agents": obs[agent_id]["prev_visible_agents"]
+							}
 
 						# Concatenate the observation components
 						concatenated_observation = np.concatenate((
@@ -449,12 +472,24 @@ class PPO:
 					# TODO: need to understand how obs formatted so that we can correctly feed it to neural network 
 					elif self.env_type == 'social-dilemma':
 						agent_id = f"agent-{i}"
-						agent_observation = {
+
+						if self.bayes: 
+							agent_observation = {
 							"curr_obs": obs[agent_id]["curr_obs"].flatten(),
 							"other_agent_actions": obs[agent_id]["other_agent_actions"],
 							"visible_agents": obs[agent_id]["visible_agents"],
-							"prev_visible_agents": obs[agent_id]["prev_visible_agents"]
+							"prev_visible_agents": obs[agent_id]["prev_visible_agents"],
+							"bayes_counter": obs[agent_id]["bayes_counter"] 
 						}
+
+						else: 
+							agent_observation = {
+							"curr_obs": obs[agent_id]["curr_obs"].flatten(),
+							"other_agent_actions": obs[agent_id]["other_agent_actions"],
+							"visible_agents": obs[agent_id]["visible_agents"],
+							"prev_visible_agents": obs[agent_id]["prev_visible_agents"],
+							}
+
 
 						# Concatenate the observation components
 						concatenated_observation = np.concatenate([

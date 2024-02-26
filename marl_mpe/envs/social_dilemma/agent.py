@@ -3,6 +3,8 @@
 import numpy as np
 
 import utility_funcs as util
+from bayes import NArmedBanditDrift
+import globals as globals
 
 # basic moves every agent should do
 BASE_ACTIONS = {
@@ -43,6 +45,12 @@ class Agent(object):
         self.col_size = col_size
         self.reward_this_turn = 0
         self.prev_visible_agents = None
+
+        # bayes intuition here 
+        # if still in delay mode, will get penalized 
+        self.max_delay = globals.max_delay
+        self.bayes = NArmedBanditDrift(n_arm=self.max_delay)
+        self.curr_restraint = 0 
 
     @property
     def action_space(self):
@@ -155,7 +163,8 @@ class Agent(object):
 
 
 HARVEST_ACTIONS = BASE_ACTIONS.copy()
-HARVEST_ACTIONS.update({7: "FIRE"})  # Fire a penalty beam
+
+# HARVEST_ACTIONS.update({7: "FIRE"})  # Fire a penalty beam
 
 
 class HarvestAgent(Agent):
@@ -164,6 +173,7 @@ class HarvestAgent(Agent):
         super().__init__(agent_id, start_pos, start_orientation, full_map, view_len, view_len)
         self.update_agent_pos(start_pos)
         self.update_agent_rot(start_orientation)
+        
 
     # Ugh, this is gross, this leads to the actions basically being
     # defined in two places
@@ -179,16 +189,37 @@ class HarvestAgent(Agent):
         if char == b"F":
             self.reward_this_turn -= 1
 
+
     def get_done(self):
         return False
 
     def consume(self, char):
         """Defines how an agent interacts with the char it is standing on"""
-        if char == b"A":
-            self.reward_this_turn += 1
-            return b" "
-        else:
-            return char
+        if self.bayes: 
+            if char == b"A":
+                if self.curr_restraint >= 0: 
+                    self.reward_this_turn += -1
+
+                    self.bayes.advance(self, self.curr_restraint, self.reward_this_turn)
+
+                    # update 
+                    self.curr_restraint = self.bayes.sample_action()
+                    return b""
+                else: 
+                    self.reward_this_turn += 1
+                    self.bayes.advance(self, self.curr_restraint, self.reward_this_turn)
+
+                    self.curr_restraint = self.bayes.sample_action()
+                    return b" "
+            else: 
+                return char
+
+        else: 
+            if char == b"A":
+                self.reward_this_turn += 1
+                return b" "
+            else:
+                return char
 
 
 CLEANUP_ACTIONS = BASE_ACTIONS.copy()

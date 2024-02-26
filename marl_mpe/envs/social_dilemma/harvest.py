@@ -150,6 +150,7 @@ class HarvestEnv(MapEnv):
     
     def render_current_map(self): 
         pass 
+
     
 
 def main(): # testing render here 

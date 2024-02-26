@@ -8,6 +8,8 @@ from gym.spaces import Box, Dict
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.env import MultiAgentEnv
 
+import globals as globals 
+
 _MAP_ENV_ACTIONS = {
     "MOVE_LEFT": [0, -1],  # Move left
     "MOVE_RIGHT": [0, 1],  # Move right
@@ -127,6 +129,9 @@ class MapEnv(MultiAgentEnv):
                     self.wall_points.append([row, col])
         self.setup_agents()
 
+        self.bayes = globals.bayes 
+        self.bayes_max = globals.max_delay
+
     @property
     def observation_space(self):
         obs_space = {
@@ -160,6 +165,19 @@ class MapEnv(MultiAgentEnv):
                     dtype=np.uint8,
                 ),
             }
+
+        if self.bayes: 
+            # bayesian insights (categorical distribution)
+            obs_space = {
+                **obs_space,
+                "bayes_counter": Box(
+                    low=0,
+                    high=len(self.bayes_max),
+                    shape=(self.bayes_max,1),
+                    dtype=np.uint8,
+                )
+            }
+
         obs_space = Dict(obs_space)
         # Change dtype so that ray can put all observations into one flat batch
         # with the correct dtype.
@@ -278,15 +296,31 @@ class MapEnv(MultiAgentEnv):
                     [actions[key] for key in sorted(actions.keys()) if key != agent.agent_id]
                 ).astype(np.uint8)
                 visible_agents = self.find_visible_agents(agent.agent_id)
-                observations[agent.agent_id] = {
+
+                if self.bayes: 
+                    observations[agent.agent_id] = {
                     "curr_obs": rgb_arr,
                     "other_agent_actions": prev_actions,
                     "visible_agents": visible_agents,
                     "prev_visible_agents": agent.prev_visible_agents,
+                    "bayes_counter": agent.prev_visible_agents,
                 }
-                agent.prev_visible_agents = visible_agents
+                    agent.prev_visible_agents = visible_agents
+
+                else: 
+
+                    observations[agent.agent_id] = {
+                        "curr_obs": rgb_arr,
+                        "other_agent_actions": prev_actions,
+                        "visible_agents": visible_agents,
+                        "prev_visible_agents": agent.prev_visible_agents,
+                    }
+                    agent.prev_visible_agents = visible_agents
             else:
-                observations[agent.agent_id] = {"curr_obs": rgb_arr}
+                if self.bayes: 
+                    observations[agent.agent_id] = {"curr_obs": rgb_arr, "bayes_counter": agent.prev_visible_agents}
+                else: 
+                    observations[agent.agent_id] = {"curr_obs": rgb_arr}
             rewards[agent.agent_id] = agent.compute_reward()
             dones[agent.agent_id] = agent.get_done()
             infos[agent.agent_id] = {}
@@ -337,12 +371,24 @@ class MapEnv(MultiAgentEnv):
                 # No previous actions so just pass in "wait" action
                 prev_actions = np.array([4 for _ in range(self.num_agents - 1)]).astype(np.uint8)
                 visible_agents = self.find_visible_agents(agent.agent_id)
-                observations[agent.agent_id] = {
-                    "curr_obs": rgb_arr,
-                    "other_agent_actions": prev_actions,
-                    "visible_agents": visible_agents,
-                    "prev_visible_agents": visible_agents,
-                }
+
+                if self.bayes: 
+                    observations[agent.agent_id] = {
+                        "curr_obs": rgb_arr,
+                        "other_agent_actions": prev_actions,
+                        "visible_agents": visible_agents,
+                        "prev_visible_agents": visible_agents,
+                        "bayes_counter": agent.prev_visible_agents,
+                    }
+
+                else: 
+                    observations[agent.agent_id] = {
+                        "curr_obs": rgb_arr,
+                        "other_agent_actions": prev_actions,
+                        "visible_agents": visible_agents,
+                        "prev_visible_agents": visible_agents,
+                    }
+
                 agent.prev_visible_agents = visible_agents
             else:
                 observations[agent.agent_id] = {"curr_obs": rgb_arr}
