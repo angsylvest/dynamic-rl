@@ -217,7 +217,7 @@ class HarvestAgent(Agent):
                 return char
 
         else: 
-            print('defaulting to other ')
+            # print('defaulting to other ')
             if char == b"A":
                 self.reward_this_turn += 1
                 return b" "

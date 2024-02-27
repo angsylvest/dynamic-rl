@@ -127,7 +127,7 @@ def main(args, mode, num_agents, obs_type, time_delay, policy_type, nonholonomic
 
 if __name__ == '__main__':
     mode = "train"
-    num_agents = 2
+    num_agents = 4
     obs_types = ["simple pos", "simple pos and local occupancy", "simple pos and vector occupancy"]
     obs_type = obs_types[0]
     time_delay = False
