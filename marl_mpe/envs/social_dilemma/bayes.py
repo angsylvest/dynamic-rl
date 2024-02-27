@@ -78,6 +78,9 @@ class NArmedBanditDrift(NArmedBandit):
         else: 
             # use categorical sampling 
             if invert: 
-                return np.random.choice(range(self.n_arm), p=(1/self.probs))
+                reciprocal_probs = 1 / self.probs
+                new_probs = reciprocal_probs / np.sum(reciprocal_probs)
+
+                return np.random.choice(range(self.n_arm), p=(new_probs))
             else: 
                 return np.random.choice(range(self.n_arm), p=self.probs)

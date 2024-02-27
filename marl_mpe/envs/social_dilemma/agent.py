@@ -51,6 +51,7 @@ class Agent(object):
         self.max_delay = globals.max_delay
         self.bayes = NArmedBanditDrift(n_arm=self.max_delay)
         self.curr_restraint = 0 
+        self.using_bayes = globals.bayes
 
     @property
     def action_space(self):
@@ -89,9 +90,12 @@ class Agent(object):
     def get_state(self):
         return util.return_view(self.full_map, self.pos, self.row_size, self.col_size)
 
-    def compute_reward(self):
+    def compute_reward(self, reset = True):
         reward = self.reward_this_turn
-        self.reward_this_turn = 0
+
+        if reset: 
+            self.reward_this_turn = 0
+
         return reward
 
     def set_pos(self, new_pos):
@@ -195,26 +199,25 @@ class HarvestAgent(Agent):
 
     def consume(self, char):
         """Defines how an agent interacts with the char it is standing on"""
-        if self.bayes: 
+        if self.using_bayes: 
             if char == b"A":
                 if self.curr_restraint >= 0: 
-                    self.reward_this_turn += -1
-
-                    self.bayes.advance(self, self.curr_restraint, self.reward_this_turn)
-
-                    # update 
-                    self.curr_restraint = self.bayes.sample_action()
+                    self.reward_this_turn += 0.5 # less gain if acting against restraint
+                    # print(f'updating reward is self.curr_restraint is greater than or equal to 0 {self.curr_restraint} for {self.reward_this_turn}')
                     return b""
                 else: 
                     self.reward_this_turn += 1
-                    self.bayes.advance(self, self.curr_restraint, self.reward_this_turn)
+                    # print(f'updating reward is self.curr_restraint is less than 0 {self.curr_restraint} for {self.reward_this_turn}')
+                    # self.bayes.advance(self, self.curr_restraint, self.reward_this_turn)
 
                     self.curr_restraint = self.bayes.sample_action()
                     return b" "
             else: 
+                # print(f'just returning char {char}')
                 return char
 
         else: 
+            print('defaulting to other ')
             if char == b"A":
                 self.reward_this_turn += 1
                 return b" "

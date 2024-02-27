@@ -12,7 +12,7 @@ env = HarvestEnv(num_agents=num_agents,
                 inequity_averse_reward=True,
                 alpha=0.0,
                 beta=0.0, 
-                split_roles=True)
+                split_roles=False)
 
 obs_space = env.observation_space
 act_space = env.action_space
@@ -32,5 +32,5 @@ share_orientation = False
 policy_type = f"simple_pos + gifting_{gifting} + time_delay_{time_delay}_usingCoord"
 
 
-model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, roles = True, checkpoint_dir = f"/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/", gifting = gifting, time_delay = time_delay, share_orientation= share_orientation, env_type = env_type)
+model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, roles = False, checkpoint_dir = f"/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/", gifting = gifting, time_delay = time_delay, share_orientation= share_orientation, env_type = env_type)
 model.learn(total_timesteps=200_000_000)

@@ -17,6 +17,8 @@ from torch.optim import Adam
 from torch.distributions import MultivariateNormal
 import matplotlib.pyplot as plt
 
+import globals as globals
+
 class PPO:
 	"""
 		This is the PPO class we will use as our model in main.py
@@ -60,7 +62,7 @@ class PPO:
 		self.env_type = env_type
 		# self.obs_dim = env.observation_space[0].shape[0]
 
-		self.bayes = False 
+		self.bayes = globals.bayes 
 
 
 		if self.env_type == 'social-dilemma': 

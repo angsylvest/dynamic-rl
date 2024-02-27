@@ -172,7 +172,7 @@ class MapEnv(MultiAgentEnv):
                 **obs_space,
                 "bayes_counter": Box(
                     low=0,
-                    high=len(self.bayes_max),
+                    high=self.bayes_max,
                     shape=(self.bayes_max,1),
                     dtype=np.uint8,
                 )
@@ -283,6 +283,33 @@ class MapEnv(MultiAgentEnv):
             if self.world_map[row, col] not in [b"F", b"C"]:
                 self.single_update_world_color_map(row, col, agent.get_char_id())
 
+        ''' --- 
+                initial set of actions complete, now want to update reward
+                redistribution + then update agent.curr_restraint 
+            ---
+        '''
+        # rewards collected total + then select someone most ahead
+
+        if self.bayes: 
+            rewards_original = {}
+            # print(f'self.agents: {self.agents}')
+            i = 0 
+            for agent in self.agents.values(): 
+                curr_key = f'agent-{i}'
+                curr_reward = agent.compute_reward(reset = False)
+                agent.curr_restraint -= 1 
+                rewards_original[curr_key] = curr_reward
+                i += 1 
+
+            # print(f'original rewards: {rewards_original}')
+            # access the agent with the maximum reward
+            # agent_max = self.agents[max_key]
+            max_key = max(rewards_original, key=lambda k: rewards_original[k])
+            agent_max = self.agents[max_key]
+            agent_max.curr_restraint = agent_max.bayes.sample_action()
+            agent_max.bayes.advance(agent_max.curr_restraint, 1)
+
+
         observations = {}
         rewards = {}
         dones = {}
@@ -303,7 +330,7 @@ class MapEnv(MultiAgentEnv):
                     "other_agent_actions": prev_actions,
                     "visible_agents": visible_agents,
                     "prev_visible_agents": agent.prev_visible_agents,
-                    "bayes_counter": agent.prev_visible_agents,
+                    "bayes_counter": agent.curr_restraint,
                 }
                     agent.prev_visible_agents = visible_agents
 
@@ -318,9 +345,10 @@ class MapEnv(MultiAgentEnv):
                     agent.prev_visible_agents = visible_agents
             else:
                 if self.bayes: 
-                    observations[agent.agent_id] = {"curr_obs": rgb_arr, "bayes_counter": agent.prev_visible_agents}
+                    observations[agent.agent_id] = {"curr_obs": rgb_arr, "bayes_counter": agent.curr_restraint}
                 else: 
                     observations[agent.agent_id] = {"curr_obs": rgb_arr}
+
             rewards[agent.agent_id] = agent.compute_reward()
             dones[agent.agent_id] = agent.get_done()
             infos[agent.agent_id] = {}
@@ -378,7 +406,7 @@ class MapEnv(MultiAgentEnv):
                         "other_agent_actions": prev_actions,
                         "visible_agents": visible_agents,
                         "prev_visible_agents": visible_agents,
-                        "bayes_counter": agent.prev_visible_agents,
+                        "bayes_counter": agent.curr_restraint,
                     }
 
                 else: 
@@ -548,10 +576,11 @@ class MapEnv(MultiAgentEnv):
          agent_actions: dict
              dict with agent_id as key and action as value
         """
-        other_action = {0: ""}
-        complement_action = {'MOVE_LEFT': 'MOVE_RIGHT', 'MOVE_RIGHT': 'MOVE_LEFT', 
-                             'MOVE_UP': 'MOVE_DOWN', 'MOVE_DOWN': 'MOVE_UP', 'STAY': 'STAY', 
-                             'TURN_CLOCKWISE': 'TURN_COUNTERCLOCKWISE', 'TURN_COUNTERCLOCKWISE': 'TURN_CLOCKWISE'}
+        # other_action = {0: ""}
+        # complement_action = {'MOVE_LEFT': 'MOVE_RIGHT', 'MOVE_RIGHT': 'MOVE_LEFT', 
+        #                      'MOVE_UP': 'MOVE_DOWN', 'MOVE_DOWN': 'MOVE_UP', 'STAY': 'STAY', 
+        #                      'TURN_CLOCKWISE': 'TURN_COUNTERCLOCKWISE', 'TURN_COUNTERCLOCKWISE': 'TURN_CLOCKWISE'}
+        
         reserved_slots = []
         for agent_id, action in agent_actions.items():
             agent = self.agents[agent_id]
@@ -561,7 +590,7 @@ class MapEnv(MultiAgentEnv):
             # TODO(ev) these two parts of the actions
             if "MOVE" in action or "STAY" in action:
                 selected_action = self.all_actions[action] # does literal action 
-                other_action[0] = action 
+                # other_action[0] = action 
                 # rotate the selected action appropriately
                 rot_action = self.rotate_action(selected_action, agent.get_orientation())
                 new_pos = agent.pos + rot_action
@@ -570,44 +599,44 @@ class MapEnv(MultiAgentEnv):
                 reserved_slots.append((*new_pos, b"P", agent_id))
             elif "TURN" in action:
                 selected_action = self.all_actions[action] # does literal action 
-                other_action[0] = action 
+                # other_action[0] = action 
                 new_rot = self.update_rotation(action, agent.get_orientation())
                 agent.update_agent_rot(new_rot)
 
-            elif 'MIMIC' in action: 
-                # print(f'action in other_action {other_action[0]} for agent id {agent_id}')
+            # elif 'MIMIC' in action: 
+            #     # print(f'action in other_action {other_action[0]} for agent id {agent_id}')
 
-                if other_action[0] != "": 
-                    selected_action = self.all_actions[other_action[0]]
+            #     if other_action[0] != "": 
+            #         selected_action = self.all_actions[other_action[0]]
 
-                    if "MOVE" in selected_action or "STAY" in selected_action:
-                        # rotate the selected action appropriately
-                        rot_action = self.rotate_action(selected_action, agent.get_orientation())
-                        new_pos = agent.pos + rot_action
-                        # allow the agents to confirm what position they can move to
-                        new_pos = agent.return_valid_pos(new_pos)
-                        reserved_slots.append((*new_pos, b"P", agent_id))
-                    elif "TURN" in action:
-                        new_rot = self.update_rotation(action, agent.get_orientation())
-                        agent.update_agent_rot(new_rot)
+            #         if "MOVE" in selected_action or "STAY" in selected_action:
+            #             # rotate the selected action appropriately
+            #             rot_action = self.rotate_action(selected_action, agent.get_orientation())
+            #             new_pos = agent.pos + rot_action
+            #             # allow the agents to confirm what position they can move to
+            #             new_pos = agent.return_valid_pos(new_pos)
+            #             reserved_slots.append((*new_pos, b"P", agent_id))
+            #         elif "TURN" in action:
+            #             new_rot = self.update_rotation(action, agent.get_orientation())
+            #             agent.update_agent_rot(new_rot)
 
 
-            elif 'COMPLEMENT' in action: 
-                # print(f'action in other_action {other_action[0]} for agent id {agent_id}')
-                if other_action[0] != "": 
-                    comple_action = complement_action[other_action[0]]
-                    selected_action = self.all_actions[comple_action]
+            # elif 'COMPLEMENT' in action: 
+            #     # print(f'action in other_action {other_action[0]} for agent id {agent_id}')
+            #     if other_action[0] != "": 
+            #         comple_action = complement_action[other_action[0]]
+            #         selected_action = self.all_actions[comple_action]
 
-                    if "MOVE" in selected_action or "STAY" in selected_action:
-                        # rotate the selected action appropriately
-                        rot_action = self.rotate_action(selected_action, agent.get_orientation())
-                        new_pos = agent.pos + rot_action
-                        # allow the agents to confirm what position they can move to
-                        new_pos = agent.return_valid_pos(new_pos)
-                        reserved_slots.append((*new_pos, b"P", agent_id))
-                    elif "TURN" in action:
-                        new_rot = self.update_rotation(action, agent.get_orientation())
-                        agent.update_agent_rot(new_rot)
+            #         if "MOVE" in selected_action or "STAY" in selected_action:
+            #             # rotate the selected action appropriately
+            #             rot_action = self.rotate_action(selected_action, agent.get_orientation())
+            #             new_pos = agent.pos + rot_action
+            #             # allow the agents to confirm what position they can move to
+            #             new_pos = agent.return_valid_pos(new_pos)
+            #             reserved_slots.append((*new_pos, b"P", agent_id))
+            #         elif "TURN" in action:
+            #             new_rot = self.update_rotation(action, agent.get_orientation())
+            #             agent.update_agent_rot(new_rot)
  
 
         # now do the conflict resolution part of the process
@@ -780,6 +809,7 @@ class MapEnv(MultiAgentEnv):
         np.random.shuffle(agent_ids)
         for agent_id in agent_ids:
             action = agent_actions[agent_id]
+            # print(f'curr action in update_custom_moves: {action}')
             # check its not a move based action
             if "MOVE" not in action and "STAY" not in action and "TURN" not in action:
                 agent = self.agents[agent_id]

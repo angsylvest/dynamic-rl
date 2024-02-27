@@ -14,7 +14,9 @@ from maps import HARVEST_MAP
 APPLE_RADIUS = 2
 
 # Add custom actions to the agent
-_HARVEST_ACTIONS = {"FIRE": 5}  # length of firing range
+# _HARVEST_ACTIONS = {"FIRE": 5}  # length of firing range
+
+_HARVEST_ACTIONS = {}  # empty for now
 
 SPAWN_PROB = [0, 0.005, 0.02, 0.05]
 
@@ -52,9 +54,14 @@ class HarvestEnv(MapEnv):
                     self.apple_points.append([row, col])
 
 
+    # @property
+    # def action_space(self):
+    #     return DiscreteWithDType(8, dtype=np.uint8)
+    
+    # updated to remove FIRE BEAM action
     @property
     def action_space(self):
-        return DiscreteWithDType(8, dtype=np.uint8)
+        return DiscreteWithDType(7, dtype=np.uint8)
     
     @property
     def action_space_roles(self):
@@ -85,19 +92,24 @@ class HarvestEnv(MapEnv):
         for apple_point in self.apple_points:
             self.single_update_map(apple_point[0], apple_point[1], b"A")
 
+    # def custom_action(self, agent, action):
+    #     """Allows agents to take actions that are not move or turn"""
+    #     updates = []
+    #     if action == "FIRE":
+    #         agent.fire_beam(b"F")
+    #         updates = self.update_map_fire(
+    #             agent.pos.tolist(),
+    #             agent.get_orientation(),
+    #             self.all_actions["FIRE"],
+    #             fire_char=b"F",
+    #         )
+
+    #     return updates
+            
     def custom_action(self, agent, action):
         """Allows agents to take actions that are not move or turn"""
-        updates = []
-        if action == "FIRE":
-            agent.fire_beam(b"F")
-            updates = self.update_map_fire(
-                agent.pos.tolist(),
-                agent.get_orientation(),
-                self.all_actions["FIRE"],
-                fire_char=b"F",
-            )
 
-        return updates
+        pass 
 
     def custom_map_update(self):
         """See parent class"""
