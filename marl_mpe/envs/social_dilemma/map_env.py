@@ -172,8 +172,8 @@ class MapEnv(MultiAgentEnv):
                 **obs_space,
                 "bayes_counter": Box(
                     low=0,
-                    high=self.bayes_max,
-                    shape=(self.bayes_max,1),
+                    high=globals.max_delay,
+                    shape=(1, ),
                     dtype=np.uint8,
                 )
             }
@@ -330,7 +330,7 @@ class MapEnv(MultiAgentEnv):
                     "other_agent_actions": prev_actions,
                     "visible_agents": visible_agents,
                     "prev_visible_agents": agent.prev_visible_agents,
-                    "bayes_counter": agent.curr_restraint,
+                    "bayes_counter": np.array([agent.curr_restraint]),
                 }
                     agent.prev_visible_agents = visible_agents
 
@@ -345,7 +345,7 @@ class MapEnv(MultiAgentEnv):
                     agent.prev_visible_agents = visible_agents
             else:
                 if self.bayes: 
-                    observations[agent.agent_id] = {"curr_obs": rgb_arr, "bayes_counter": agent.curr_restraint}
+                    observations[agent.agent_id] = {"curr_obs": rgb_arr, "bayes_counter": np.array([agent.curr_restraint] )}
                 else: 
                     observations[agent.agent_id] = {"curr_obs": rgb_arr}
 
@@ -406,7 +406,7 @@ class MapEnv(MultiAgentEnv):
                         "other_agent_actions": prev_actions,
                         "visible_agents": visible_agents,
                         "prev_visible_agents": visible_agents,
-                        "bayes_counter": agent.curr_restraint,
+                        "bayes_counter": np.array([agent.curr_restraint]),
                     }
 
                 else: 

@@ -483,6 +483,15 @@ class PPO:
 							"prev_visible_agents": obs[agent_id]["prev_visible_agents"],
 							"bayes_counter": obs[agent_id]["bayes_counter"] 
 						}
+							# Concatenate the observation components
+							concatenated_observation = np.concatenate([
+								agent_observation["curr_obs"],
+								agent_observation["other_agent_actions"],
+								agent_observation["visible_agents"],
+								agent_observation["prev_visible_agents"], 
+								agent_observation["bayes_counter"], 
+							])
+
 
 						else: 
 							agent_observation = {
@@ -492,14 +501,13 @@ class PPO:
 							"prev_visible_agents": obs[agent_id]["prev_visible_agents"],
 							}
 
-
-						# Concatenate the observation components
-						concatenated_observation = np.concatenate([
-							agent_observation["curr_obs"],
-							agent_observation["other_agent_actions"],
-							agent_observation["visible_agents"],
-							agent_observation["prev_visible_agents"]
-						])
+							# Concatenate the observation components
+							concatenated_observation = np.concatenate([
+								agent_observation["curr_obs"],
+								agent_observation["other_agent_actions"],
+								agent_observation["visible_agents"],
+								agent_observation["prev_visible_agents"]
+							])
 
 						action, log_prob = self.get_action(concatenated_observation, i)
 
