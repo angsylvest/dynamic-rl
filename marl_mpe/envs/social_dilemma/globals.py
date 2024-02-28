@@ -1,2 +1,2 @@
-bayes = False 
+bayes = True 
 max_delay = 3

@@ -297,6 +297,8 @@ class MapEnv(MultiAgentEnv):
             for agent in self.agents.values(): 
                 curr_key = f'agent-{i}'
                 curr_reward = agent.compute_reward(reset = False)
+
+                
                 agent.curr_restraint -= 1 
                 rewards_original[curr_key] = curr_reward
                 i += 1 
@@ -305,9 +307,12 @@ class MapEnv(MultiAgentEnv):
             # access the agent with the maximum reward
             # agent_max = self.agents[max_key]
             max_key = max(rewards_original, key=lambda k: rewards_original[k])
-            agent_max = self.agents[max_key]
-            agent_max.curr_restraint = agent_max.bayes.sample_action()
-            agent_max.bayes.advance(agent_max.curr_restraint, 1)
+            min_key = min(rewards_original, key=lambda k: rewards_original[k])
+
+            if rewards_original[max_key] - rewards_original[min_key] > 2:
+                agent_max = self.agents[max_key]
+                agent_max.curr_restraint = agent_max.bayes.sample_action()
+                agent_max.bayes.advance(agent_max.curr_restraint, 1)
 
 
         observations = {}
