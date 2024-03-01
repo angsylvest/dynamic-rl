@@ -253,9 +253,11 @@ class MapEnv(MultiAgentEnv):
 
         self.beam_pos = []
         agent_actions = {}
+
         for agent_id, action in actions.items():
             agent_action = self.agents[agent_id].action_map(action)
             agent_actions[agent_id] = agent_action
+            
 
         # Remove agents from color map
         for agent in self.agents.values():
@@ -297,7 +299,6 @@ class MapEnv(MultiAgentEnv):
             for agent in self.agents.values(): 
                 curr_key = f'agent-{i}'
                 curr_reward = agent.compute_reward(reset = False)
-
                 
                 agent.curr_restraint -= 1 
                 rewards_original[curr_key] = curr_reward
