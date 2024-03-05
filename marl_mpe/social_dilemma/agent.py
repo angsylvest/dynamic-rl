@@ -204,7 +204,7 @@ class HarvestAgent(Agent):
             if char == b"A":
                 if self.curr_restraint > 0: 
                     self.consume_reward *= 0.25 # only get quarter of current reward
-                    self.reward_this_turn += 0.5 # less gain if acting against restraint
+                    self.reward_this_turn += self.consume_reward # 0.5 # less gain if acting against restraint
                     # print(f'updating reward is self.curr_restraint is greater than or equal to 0 {self.curr_restraint} for {self.reward_this_turn}')
                     return b""
                 else: 
@@ -220,7 +220,7 @@ class HarvestAgent(Agent):
                 if self.curr_restraint > 0 and self.using_bayes: 
                     if self.consume_reward < 1: 
                         self.consume_reward *= 1.25 # some return back 
-                        self.reward_this_turn += self.consume_reward
+                        # self.reward_this_turn += self.consume_reward
 
                 return char
 
