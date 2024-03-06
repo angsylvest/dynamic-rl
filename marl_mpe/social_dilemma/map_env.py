@@ -308,7 +308,7 @@ class MapEnv(MultiAgentEnv):
                 rewards_original[curr_key] = curr_reward
                 i += 1 
 
-            print(f'original rewards: {rewards_original}')
+            # print(f'original rewards: {rewards_original}')
             # access the agent with the maximum reward
             # agent_max = self.agents[max_key]
             max_key = max(rewards_original, key=lambda k: rewards_original[k])
@@ -831,7 +831,7 @@ class MapEnv(MultiAgentEnv):
         """For points in new_points, place desired char on the map
         Update the color map as well"""
         for point in new_points:
-            print(f'single point updates on map: {point}')
+            # print(f'single point updates on map: {point}')
             self.single_update_map(*point)
 
     def single_update_map(self, row, col, char):
@@ -928,7 +928,7 @@ class MapEnv(MultiAgentEnv):
                     firing_points.append((next_cell[0], next_cell[1], fire_char))
                     for c in range(len(cell_types)):
                         if self.world_map[next_cell[0], next_cell[1]] == cell_types[c]:
-                            print(f'updating the cell to update_char {updates}')
+                            # print(f'updating the cell to update_char {updates}')
                             updates.append((next_cell[0], next_cell[1], update_char[c]))
                             break
 
@@ -950,7 +950,7 @@ class MapEnv(MultiAgentEnv):
                     break
 
         self.beam_pos += firing_points
-        print(f'updates so far: {updates}')
+        # print(f'updates so far: {updates}')
         return updates
 
     def spawn_point(self):

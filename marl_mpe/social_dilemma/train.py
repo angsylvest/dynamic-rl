@@ -49,7 +49,7 @@ nonholonomic = False
 gifting = False 
 share_orientation = False
 # policy_type = f"simple_pos + time_delay_{time_delay}" # just way to label policies 
-policy_type = f"env_type_{env_type}_num_agents_{num_agents}_bayes_{globals.bayes}_gifting_{globals.gifting}_envused_{env_used}_TESTING"
+policy_type = f"env_type_{env_type}_num_agents_{num_agents}_bayes_{globals.bayes}_gifting_{globals.gifting}_envused_{env_used}"
 
 checkpoint_dir = f"/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/{policy_type}" 
 

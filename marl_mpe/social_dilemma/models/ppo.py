@@ -397,11 +397,11 @@ class PPO:
 			actions = []
 			log_probs = []
 
-			print('env reset (max timesteps )')
+			# print('env reset (max timesteps )')
 
 			# Run an episode for a maximum of max_timesteps_per_episode timesteps
 			for ep_t in range(self.max_timesteps_per_episode):
-				print(f'ep time so far: {ep_t} for {self.max_timesteps_per_episode}')
+				# print(f'ep time so far: {ep_t} for {self.max_timesteps_per_episode}')
 				actions = []
 				log_probs = []
 
