@@ -28,8 +28,7 @@ elif env_used == "clean-up":
                 use_collective_reward=False,
                 inequity_averse_reward=True,
                 alpha=0.0,
-                beta=0.0, 
-                split_roles=False)
+                beta=0.0)
     
 else: 
     print('ERROR: invalid/implemented env entered')

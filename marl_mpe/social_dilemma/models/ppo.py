@@ -88,7 +88,7 @@ class PPO:
 			# Account for multiple agents by multiplying by the number of agents
 			self.obs_dim = obs_size # obs_size_per_agent
 			self.act_dim = env.action_space.n
-			self.act_dim_follower = env.action_space_roles.n
+			# self.act_dim_follower = env.action_space_roles.n
 
 			# print(f'updated obs_dim: {self.obs_dim}')
 		

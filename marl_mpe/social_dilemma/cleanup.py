@@ -7,9 +7,9 @@ from map_env import MapEnv
 from maps import CLEANUP_MAP
 
 # Add custom actions to the agent
-# _CLEANUP_ACTIONS = {"FIRE": 5, "CLEAN": 5}  # length of firing beam, length of cleanup beam
+_CLEANUP_ACTIONS = {"FIRE": 5, "CLEAN": 5}  # length of firing beam, length of cleanup beam
 
-_CLEANUP_ACTIONS = {"CLEAN": 5} 
+# _CLEANUP_ACTIONS = {"CLEAN": 5} 
 
 # Custom colour dictionary
 CLEANUP_COLORS = {
@@ -83,9 +83,13 @@ class CleanupEnv(MapEnv):
 
         self.color_map.update(CLEANUP_COLORS)
 
+    # @property
+    # def action_space(self):
+    #     return DiscreteWithDType(9, dtype=np.uint8)
+        
     @property
     def action_space(self):
-        return DiscreteWithDType(9, dtype=np.uint8)
+        return DiscreteWithDType(8, dtype=np.uint8)
 
     def custom_reset(self):
         """Initialize the walls and the waste"""
