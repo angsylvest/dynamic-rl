@@ -7,7 +7,9 @@ from map_env import MapEnv
 from maps import CLEANUP_MAP
 
 # Add custom actions to the agent
-_CLEANUP_ACTIONS = {"FIRE": 5, "CLEAN": 5}  # length of firing beam, length of cleanup beam
+# _CLEANUP_ACTIONS = {"FIRE": 5, "CLEAN": 5}  # length of firing beam, length of cleanup beam
+
+_CLEANUP_ACTIONS = {"CLEAN": 5} 
 
 # Custom colour dictionary
 CLEANUP_COLORS = {
@@ -98,15 +100,16 @@ class CleanupEnv(MapEnv):
     def custom_action(self, agent, action):
         """Allows agents to take actions that are not move or turn"""
         updates = []
-        if action == "FIRE":
-            agent.fire_beam(b"F")
-            updates = self.update_map_fire(
-                agent.pos.tolist(),
-                agent.get_orientation(),
-                self.all_actions["FIRE"],
-                fire_char=b"F",
-            )
-        elif action == "CLEAN":
+        # if action == "FIRE":
+        #     agent.fire_beam(b"F")
+        #     updates = self.update_map_fire(
+        #         agent.pos.tolist(),
+        #         agent.get_orientation(),
+        #         self.all_actions["FIRE"],
+        #         fire_char=b"F",
+        #     )
+        # elif action == "CLEAN":
+        if action == "CLEAN":
             agent.fire_beam(b"C")
             updates = self.update_map_fire(
                 agent.pos.tolist(),
@@ -219,4 +222,4 @@ def main(): # testing render here
      
 
 
-main()
+# main()

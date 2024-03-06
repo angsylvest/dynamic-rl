@@ -238,8 +238,8 @@ class HarvestAgent(Agent):
 
 
 CLEANUP_ACTIONS = BASE_ACTIONS.copy()
-CLEANUP_ACTIONS.update({7: "FIRE", 8: "CLEAN"})  # Fire a penalty beam  # Fire a cleaning beam
-
+# CLEANUP_ACTIONS.update({7: "FIRE", 8: "CLEAN"})  # Fire a penalty beam  # Fire a cleaning beam
+CLEANUP_ACTIONS.update({7: "CLEAN"})  
 
 class CleanupAgent(Agent):
     def __init__(self, agent_id, start_pos, start_orientation, full_map, view_len):
