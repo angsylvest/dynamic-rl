@@ -199,3 +199,24 @@ class CleanupEnv(MapEnv):
         current_area = counts_dict.get(b"H", 0)
         free_area = self.potential_waste_area - current_area
         return free_area
+    
+
+def main(): # testing render here 
+    env = CleanupEnv(num_agents=3,
+                return_agent_actions=True,
+                use_collective_reward=True,
+                inequity_averse_reward=True,
+                alpha=0.0,
+                beta=0.0)
+    
+    # env.custom_reset() # will generate apples 
+    # env.custom_map_update()
+    states = env.reset()
+    obs = states
+    print(f'obs shape \n {obs["agent-0"]["curr_obs"].shape} \n {obs["agent-0"]["other_agent_actions"].shape} \n {obs["agent-0"]["visible_agents"].shape} \n {obs["agent-0"]["prev_visible_agents"].shape}')
+
+    env.render(filename="clean_up.png")
+     
+
+
+main()
