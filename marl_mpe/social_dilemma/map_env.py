@@ -333,7 +333,7 @@ class MapEnv(MultiAgentEnv):
                 agent.curr_restraint -= 1 
                 rewards_original[curr_key] = curr_reward
                 # find amount to distribute to each agent except themselves 
-                amount_to_distribute[curr_key] = rewards_original[curr_key] * (1/(self.num_agents + 1)) # TODO: may need a better way to do this
+                amount_to_distribute[curr_key] = rewards_original[curr_key] * ((1/(self.num_agents + 1))*0.2) # TODO: may need a better way to do this
                 rewards_original[curr_key] = rewards_original[curr_key] - (amount_to_distribute[curr_key] * self.num_agents) # update so that amount is deducted
 
                 i += 1 
