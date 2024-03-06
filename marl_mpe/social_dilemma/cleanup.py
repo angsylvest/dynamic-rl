@@ -25,7 +25,7 @@ CLEANUP_VIEW_SIZE = 7
 
 thresholdDepletion = 0.4
 thresholdRestoration = 0.0
-wasteSpawnProbability = 0.5
+wasteSpawnProbability = 0.05 # 0.5
 appleRespawnProbability = 0.05
 
 
@@ -93,6 +93,7 @@ class CleanupEnv(MapEnv):
 
     def custom_reset(self):
         """Initialize the walls and the waste"""
+        print('resetting (custom)')
         for waste_start_point in self.waste_start_points:
             self.single_update_map(waste_start_point[0], waste_start_point[1], b"H")
         for river_point in self.river_points:
@@ -104,6 +105,7 @@ class CleanupEnv(MapEnv):
     def custom_action(self, agent, action):
         """Allows agents to take actions that are not move or turn"""
         updates = []
+        # print(f'actions in custom_action: {action} for agent {agent}')
         # if action == "FIRE":
         #     agent.fire_beam(b"F")
         #     updates = self.update_map_fire(
@@ -114,6 +116,7 @@ class CleanupEnv(MapEnv):
         #     )
         # elif action == "CLEAN":
         if action == "CLEAN":
+            # print('we cleaning')
             agent.fire_beam(b"C")
             updates = self.update_map_fire(
                 agent.pos.tolist(),
@@ -124,6 +127,14 @@ class CleanupEnv(MapEnv):
                 update_char=[b"R"],
                 blocking_cells=[b"H"],
             )
+
+            # if using bayes, want to be able to reward cleaning
+            # if self.bayes: 
+            #     if agent.consume_reward < 1: 
+            #         agent.consume_reward
+            #     pass 
+
+            # print(f'update from custom action: {updates}')
         return updates
 
     def custom_map_update(self):
@@ -178,6 +189,7 @@ class CleanupEnv(MapEnv):
                     if rand_num < self.current_waste_spawn_prob:
                         spawn_points.append((row, col, b"H"))
                         break
+
         return spawn_points
 
     def compute_probabilities(self):
@@ -191,6 +203,7 @@ class CleanupEnv(MapEnv):
             self.current_waste_spawn_prob = wasteSpawnProbability
             if waste_density <= thresholdRestoration:
                 self.current_apple_spawn_prob = appleRespawnProbability
+                # print('resetting apple spawn prob')
             else:
                 spawn_prob = (
                     1
@@ -198,12 +211,15 @@ class CleanupEnv(MapEnv):
                     / (thresholdDepletion - thresholdRestoration)
                 ) * appleRespawnProbability
                 self.current_apple_spawn_prob = spawn_prob
+                # print(f'updated respawn to {self.current_apple_spawn_prob}')
 
     def compute_permitted_area(self):
         """How many cells can we spawn waste on?"""
+
         unique, counts = np.unique(self.world_map, return_counts=True)
         counts_dict = dict(zip(unique, counts))
         current_area = counts_dict.get(b"H", 0)
+
         free_area = self.potential_waste_area - current_area
         return free_area
     
@@ -221,7 +237,7 @@ def main(): # testing render here
     states = env.reset()
     obs = states
     print(f'obs shape \n {obs["agent-0"]["curr_obs"].shape} \n {obs["agent-0"]["other_agent_actions"].shape} \n {obs["agent-0"]["visible_agents"].shape} \n {obs["agent-0"]["prev_visible_agents"].shape}')
-
+    
     env.render(filename="clean_up.png")
      
 

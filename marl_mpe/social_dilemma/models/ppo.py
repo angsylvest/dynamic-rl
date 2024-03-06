@@ -397,8 +397,11 @@ class PPO:
 			actions = []
 			log_probs = []
 
+			print('env reset (max timesteps )')
+
 			# Run an episode for a maximum of max_timesteps_per_episode timesteps
 			for ep_t in range(self.max_timesteps_per_episode):
+				print(f'ep time so far: {ep_t} for {self.max_timesteps_per_episode}')
 				actions = []
 				log_probs = []
 
@@ -568,8 +571,8 @@ class PPO:
 					# dones.append(done)
 
 				# If the environment tells us the episode is terminated, break
-				if dones:
-					break
+				# if dones:
+				# 	break
 
 			# print(f'info from batch ep_rews: {ep_rews} \n batch_acts: {batch_acts} \n batch_log_probs: {batch_log_probs} \n batch_obs: {batch_obs}')
 

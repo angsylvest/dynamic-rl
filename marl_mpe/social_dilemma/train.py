@@ -20,6 +20,7 @@ if env_used == "harvest":
                 alpha=0.0,
                 beta=0.0, 
                 split_roles=False)
+    
 elif env_used == "clean-up": 
     # just testing 
     
@@ -48,7 +49,7 @@ nonholonomic = False
 gifting = False 
 share_orientation = False
 # policy_type = f"simple_pos + time_delay_{time_delay}" # just way to label policies 
-policy_type = f"env_type_{env_type}_num_agents_{num_agents}_bayes_{globals.bayes}_gifting_{globals.gifting}_envused_{env_used}"
+policy_type = f"env_type_{env_type}_num_agents_{num_agents}_bayes_{globals.bayes}_gifting_{globals.gifting}_envused_{env_used}_TESTING"
 
 checkpoint_dir = f"/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/{policy_type}" 
 

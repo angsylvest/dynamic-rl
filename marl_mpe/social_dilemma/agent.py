@@ -258,6 +258,7 @@ class CleanupAgent(Agent):
     def fire_beam(self, char):
         if char == b"F":
             self.reward_this_turn -= 1
+            print(f'fire beaming reward this turn: {self.reward_this_turn}')
 
     def get_done(self):
         return False
@@ -268,11 +269,39 @@ class CleanupAgent(Agent):
 
     def consume(self, char):
         """Defines how an agent interacts with the char it is standing on"""
-        if char == b"A":
-            self.reward_this_turn += 1
-            return b" "
-        else:
-            return char
+        # """Defines how an agent interacts with the char it is standing on"""
+        if self.using_bayes: 
+            if char == b"A":
+                if self.curr_restraint > 0: 
+                    self.consume_reward *= 0.25 # only get quarter of current reward
+                    self.reward_this_turn += self.consume_reward # 0.5 # less gain if acting against restraint
+                    # print(f'updating reward is self.curr_restraint is greater than or equal to 0 {self.curr_restraint} for {self.reward_this_turn}')
+                    return b""
+                else: 
+                    self.consume_reward = 1
+                    self.reward_this_turn += self.consume_reward
+                    # print(f'updating reward is self.curr_restraint is less than 0 {self.curr_restraint} for {self.reward_this_turn}')
+                    # self.bayes.advance(self, self.curr_restraint, self.reward_this_turn)
+
+                    self.curr_restraint = self.bayes.sample_action()
+                    return b" "
+            else: 
+                # no item to consume 
+                if self.curr_restraint > 0 and self.using_bayes: 
+                    if self.consume_reward < 1: 
+                        self.consume_reward *= 1.25 # some return back 
+                        # self.reward_this_turn += self.consume_reward
+
+                return char
+
+        else: 
+            # print(f'defaulting to other {self.reward_this_turn} with char {char}')
+            if char == b"A":
+                self.reward_this_turn += 1
+                print('are we every getting a reward?')
+                return b" "
+            else:
+                return char
 
 
 SWITCH_ACTIONS = BASE_ACTIONS.copy()
