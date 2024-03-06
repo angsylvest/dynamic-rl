@@ -671,7 +671,7 @@ class PPO:
 		# mean = self.actor(obs)
 		# print(f'obs shape: {obs.shape}')
 		mean = self.actors[index](obs)
-		dist = torch.distributions.Categorical(logits=mean)
+		dist = torch.distributions.Categorical(logits=mean) # sampling from categorical since actions are discretized
 
 		# Create a distribution with the mean action and std from the covariance matrix above.
 		# For more information on how this distribution works, check out Andrew Ng's lecture on it:
