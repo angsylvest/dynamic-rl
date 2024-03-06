@@ -54,6 +54,10 @@ class Agent(object):
         self.using_bayes = globals.bayes
         self.consume_reward = 1 # normally 1 but would be scaled if practicing restraint
 
+        self.gifting = globals.gifting
+
+        assert self.gifting != self.bayes # ensure that they are not being used together
+    
     @property
     def action_space(self):
         """Identify the dimensions and bounds of the action space.
