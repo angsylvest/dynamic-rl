@@ -931,8 +931,8 @@ class MapEnv(MultiAgentEnv):
                     firing_points.append((next_cell[0], next_cell[1], fire_char))
                     for c in range(len(cell_types)):
                         if self.world_map[next_cell[0], next_cell[1]] == cell_types[c]:
-                            # print(f'updating the cell to update_char {updates}')
                             updates.append((next_cell[0], next_cell[1], update_char[c]))
+                            # print(f'updating the cell to update_char {updates}')
                             break
 
                     # agents absorb beams

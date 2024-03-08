@@ -255,6 +255,8 @@ class CleanupAgent(Agent):
         self.update_agent_pos(start_pos)
         self.update_agent_rot(start_orientation)
 
+        self.accrued_debt = 0
+
     # Ugh, this is gross, this leads to the actions basically being
     # defined in two places
     def action_map(self, action_number):
@@ -265,6 +267,16 @@ class CleanupAgent(Agent):
         if char == b"F":
             self.reward_this_turn -= 1
             print(f'fire beaming reward this turn: {self.reward_this_turn}')
+
+        if char == b"C" and self.bayes: 
+            if self.consume_reward > 0: 
+                self.reward_this_turn += 0.1
+                self.accrued_debt += 0.1
+
+                self.consume_reward -= 0.1 # hopefully will induce heterogeneity
+                
+            self.curr_restraint = 0
+
 
     def get_done(self):
         return False
@@ -280,8 +292,8 @@ class CleanupAgent(Agent):
         # """Defines how an agent interacts with the char it is standing on"""
         if self.using_bayes: 
             if char == b"A":
+                # get amount of time waited 
                 if self.curr_restraint > 0: 
-                    self.consume_reward *= 0.25 # only get quarter of current reward
                     self.reward_this_turn += self.consume_reward # 0.5 # less gain if acting against restraint
                     # print(f'updating reward is self.curr_restraint is greater than or equal to 0 {self.curr_restraint} for {self.reward_this_turn}')
                     return b""
@@ -293,13 +305,8 @@ class CleanupAgent(Agent):
 
                     self.curr_restraint = self.bayes.sample_action()
                     return b" "
-            else: 
-                # no item to consume 
-                if self.curr_restraint > 0 and self.using_bayes: 
-                    if self.consume_reward < 1: 
-                        self.consume_reward *= 1.25 # some return back 
-                        # self.reward_this_turn += self.consume_reward
 
+            else:
                 return char
 
         else: 

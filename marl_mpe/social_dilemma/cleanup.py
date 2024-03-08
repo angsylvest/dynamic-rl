@@ -98,7 +98,7 @@ class CleanupEnv(MapEnv):
 
     def custom_reset(self):
         """Initialize the walls and the waste"""
-        print('resetting (custom)')
+        # print('resetting (custom)')
         for waste_start_point in self.waste_start_points:
             self.single_update_map(waste_start_point[0], waste_start_point[1], b"H")
         for river_point in self.river_points:
