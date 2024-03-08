@@ -3,13 +3,11 @@ from numpy.random import rand
 
 from agent import HarvestAgent
 from agent_follower import HarvestAgentFollower
-# from social_dilemmas.envs.agent import HarvestAgent
-# from social_dilemmas.envs.gym.discrete_with_dtype import DiscreteWithDType
 from discrete_with_d_type import DiscreteWithDType
 from map_env import MapEnv
 from maps import HARVEST_MAP
-# from social_dilemmas.envs.map_env import MapEnv
-# from social_dilemmas.maps import HARVEST_MAP
+
+import globals as globals
 
 APPLE_RADIUS = 2
 
@@ -53,15 +51,18 @@ class HarvestEnv(MapEnv):
                 if self.base_map[row, col] == b"A":
                     self.apple_points.append([row, col])
 
+        # determine what type of env being used 
+        self.gifting = globals.gifting
 
-    # @property
-    # def action_space(self):
-    #     return DiscreteWithDType(8, dtype=np.uint8)
+
     
     # updated to remove FIRE BEAM action
     @property
     def action_space(self):
-        return DiscreteWithDType(7, dtype=np.uint8)
+        if self.gifting: # include "gift" action
+            return DiscreteWithDType(8, dtype=np.uint8)
+        else: 
+            return DiscreteWithDType(7, dtype=np.uint8)
     
     @property
     def action_space_roles(self):
@@ -92,24 +93,23 @@ class HarvestEnv(MapEnv):
         for apple_point in self.apple_points:
             self.single_update_map(apple_point[0], apple_point[1], b"A")
 
-    # def custom_action(self, agent, action):
-    #     """Allows agents to take actions that are not move or turn"""
-    #     updates = []
-    #     if action == "FIRE":
-    #         agent.fire_beam(b"F")
-    #         updates = self.update_map_fire(
-    #             agent.pos.tolist(),
-    #             agent.get_orientation(),
-    #             self.all_actions["FIRE"],
-    #             fire_char=b"F",
-    #         )
 
-    #     return updates
-            
     def custom_action(self, agent, action):
-        """Allows agents to take actions that are not move or turn"""
+        # TODO: ensure that this is actually doing what is expected if gifting 
 
-        pass 
+        """Allows agents to take actions that are not move or turn"""
+        updates = []
+        if action == "FIRE" and self.gifting:
+            agent.fire_beam(b"F")
+            updates = self.update_map_fire(
+                agent.pos.tolist(),
+                agent.get_orientation(),
+                self.all_actions["FIRE"],
+                fire_char=b"F",
+            )
+
+        return updates
+            
 
     def custom_map_update(self):
         """See parent class"""

@@ -5,6 +5,7 @@ from agent import CleanupAgent
 from discrete_with_d_type import DiscreteWithDType
 from map_env import MapEnv
 from maps import CLEANUP_MAP
+import globals as globals 
 
 # Add custom actions to the agent
 _CLEANUP_ACTIONS = {"FIRE": 5, "CLEAN": 5}  # length of firing beam, length of cleanup beam
@@ -82,6 +83,7 @@ class CleanupEnv(MapEnv):
                     self.river_points.append([row, col])
 
         self.color_map.update(CLEANUP_COLORS)
+        self.gifting = globals.gifting
 
     # @property
     # def action_space(self):
@@ -89,7 +91,10 @@ class CleanupEnv(MapEnv):
         
     @property
     def action_space(self):
-        return DiscreteWithDType(8, dtype=np.uint8)
+        if self.gifting: 
+            return DiscreteWithDType(9, dtype=np.uint8)
+        else: 
+            return DiscreteWithDType(8, dtype=np.uint8)
 
     def custom_reset(self):
         """Initialize the walls and the waste"""
@@ -106,16 +111,16 @@ class CleanupEnv(MapEnv):
         """Allows agents to take actions that are not move or turn"""
         updates = []
         # print(f'actions in custom_action: {action} for agent {agent}')
-        # if action == "FIRE":
-        #     agent.fire_beam(b"F")
-        #     updates = self.update_map_fire(
-        #         agent.pos.tolist(),
-        #         agent.get_orientation(),
-        #         self.all_actions["FIRE"],
-        #         fire_char=b"F",
-        #     )
+        if action == "FIRE" and self.gifting:
+            agent.fire_beam(b"F")
+            updates = self.update_map_fire(
+                agent.pos.tolist(),
+                agent.get_orientation(),
+                self.all_actions["FIRE"],
+                fire_char=b"F",
+            )
         # elif action == "CLEAN":
-        if action == "CLEAN":
+        elif action == "CLEAN":
             # print('we cleaning')
             agent.fire_beam(b"C")
             updates = self.update_map_fire(
@@ -128,13 +133,6 @@ class CleanupEnv(MapEnv):
                 blocking_cells=[b"H"],
             )
 
-            # if using bayes, want to be able to reward cleaning
-            # if self.bayes: 
-            #     if agent.consume_reward < 1: 
-            #         agent.consume_reward
-            #     pass 
-
-            # print(f'update from custom action: {updates}')
         return updates
 
     def custom_map_update(self):

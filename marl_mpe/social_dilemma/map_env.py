@@ -320,37 +320,38 @@ class MapEnv(MultiAgentEnv):
                 agent_max.bayes.advance(agent_max.curr_restraint, 1)
 
         elif self.gifting: 
+            pass 
             # each agent can dist some of reward to others
-            rewards_original = {}
-            amount_to_distribute = {}
+            # rewards_original = {}
+            # amount_to_distribute = {}
 
-            # print(f'self.agents: {self.agents}')
-            i = 0 
-            for agent in self.agents.values(): 
-                curr_key = f'agent-{i}'
-                curr_reward = agent.compute_reward(reset = True)
+            # # print(f'self.agents: {self.agents}')
+            # i = 0 
+            # for agent in self.agents.values(): 
+            #     curr_key = f'agent-{i}'
+            #     curr_reward = agent.compute_reward(reset = True)
                 
-                agent.curr_restraint -= 1 
-                rewards_original[curr_key] = curr_reward
-                # find amount to distribute to each agent except themselves 
-                amount_to_distribute[curr_key] = rewards_original[curr_key] * ((1/(self.num_agents + 1))*0.2) # TODO: may need a better way to do this
-                rewards_original[curr_key] = rewards_original[curr_key] - (amount_to_distribute[curr_key] * self.num_agents) # update so that amount is deducted
+            #     agent.curr_restraint -= 1 
+            #     rewards_original[curr_key] = curr_reward
+            #     # find amount to distribute to each agent except themselves 
+            #     amount_to_distribute[curr_key] = rewards_original[curr_key] * ((1/(self.num_agents + 1))*0.2) # TODO: may need a better way to do this
+            #     rewards_original[curr_key] = rewards_original[curr_key] - (amount_to_distribute[curr_key] * self.num_agents) # update so that amount is deducted
 
-                i += 1 
+            #     i += 1 
 
-            i = 0 
-            i_other = 0 
-            for agent in self.agents.values():
-                curr_key = f'agent-{i}'
-                for other_agent in self.agents.values():
-                    other_curr_key = f'agent-{i_other}'
-                    if agent != other_agent: 
-                        rewards_original[other_curr_key] += amount_to_distribute[curr_key]   
+            # i = 0 
+            # i_other = 0 
+            # for agent in self.agents.values():
+            #     curr_key = f'agent-{i}'
+            #     for other_agent in self.agents.values():
+            #         other_curr_key = f'agent-{i_other}'
+            #         if agent != other_agent: 
+            #             rewards_original[other_curr_key] += amount_to_distribute[curr_key]   
 
-                    i_other += 1
+            #         i_other += 1
 
-                i_other = 0 
-                i += 1
+            #     i_other = 0 
+            #     i += 1
 
             
         observations = {}

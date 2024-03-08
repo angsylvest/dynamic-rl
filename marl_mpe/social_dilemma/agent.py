@@ -173,7 +173,8 @@ class Agent(object):
 
 HARVEST_ACTIONS = BASE_ACTIONS.copy()
 
-# HARVEST_ACTIONS.update({7: "FIRE"})  # Fire a penalty beam
+if globals.gifting: 
+    HARVEST_ACTIONS.update({7: "FIRE"})  # Fire a penalty beam
 
 
 class HarvestAgent(Agent):
@@ -190,9 +191,11 @@ class HarvestAgent(Agent):
         """Maps action_number to a desired action in the map"""
         return HARVEST_ACTIONS[action_number]
 
-    def hit(self, char):
-        if char == b"F":
+    def hit(self, char, split_cost = 0):
+        if char == b"F" and not self.gifting:
             self.reward_this_turn -= 50
+        elif char == b"F" and self.gifting: 
+            self.reward_this_turn += split_cost 
 
     def fire_beam(self, char):
         if char == b"F":
@@ -238,8 +241,11 @@ class HarvestAgent(Agent):
 
 
 CLEANUP_ACTIONS = BASE_ACTIONS.copy()
-# CLEANUP_ACTIONS.update({7: "FIRE", 8: "CLEAN"})  # Fire a penalty beam  # Fire a cleaning beam
-CLEANUP_ACTIONS.update({7: "CLEAN"})  
+
+if globals.gifting: 
+    CLEANUP_ACTIONS.update({7: "FIRE", 8: "CLEAN"})  # Fire a penalty beam  # Fire a cleaning beam
+else: 
+    CLEANUP_ACTIONS.update({7: "CLEAN"})  
 
 class CleanupAgent(Agent):
     def __init__(self, agent_id, start_pos, start_orientation, full_map, view_len):
@@ -263,9 +269,11 @@ class CleanupAgent(Agent):
     def get_done(self):
         return False
 
-    def hit(self, char):
-        if char == b"F":
+    def hit(self, char, split_cost = 0):
+        if char == b"F" and not self.gifting:
             self.reward_this_turn -= 50
+        elif char == b"F" and self.gifting: 
+            self.reward_this_turn += split_cost
 
     def consume(self, char):
         """Defines how an agent interacts with the char it is standing on"""
