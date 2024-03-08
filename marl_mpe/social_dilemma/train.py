@@ -7,7 +7,7 @@ import globals as globals
 import os 
 
 model_name = ""
-num_agents =  5
+num_agents =  8
 
 env_used = globals.environment_used
 
@@ -54,6 +54,7 @@ checkpoint_dir = f"/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoint
 
 # Create the directory if it doesn't exist
 os.makedirs(checkpoint_dir, exist_ok=True)
+checkpoints = []
 
-model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, roles = False, checkpoint_dir = checkpoint_dir, gifting = globals.gifting, time_delay = time_delay, share_orientation= share_orientation, env_type = env_type)
+model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, roles = False, checkpoint_dir = checkpoint_dir, gifting = globals.gifting, time_delay = time_delay, share_orientation= share_orientation, env_type = env_type, checkpoints = checkpoints)
 model.learn(total_timesteps=200_000_000)

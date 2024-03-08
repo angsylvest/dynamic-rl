@@ -23,7 +23,7 @@ class PPO:
 	"""
 		This is the PPO class we will use as our model in main.py
 	"""
-	def __init__(self, policy_class, env, num_agents, policy_type, checkpoint_dir, gifting, time_delay, share_orientation, env_type, roles, **hyperparameters):
+	def __init__(self, policy_class, env, num_agents, policy_type, checkpoint_dir, gifting, time_delay, share_orientation, env_type, roles, checkpoints, **hyperparameters):
 		"""
 			Initializes the PPO model, including hyperparameters.
 
@@ -41,6 +41,7 @@ class PPO:
 		self.env = env
 		self.env_type = env_type
 		self.roles = roles
+		self.checkpoints = checkpoints
 
 		if self.env_type == 'social-dilemma': 
 			assert(type(env.observation_space) == gym.spaces.dict.Dict)
@@ -123,7 +124,8 @@ class PPO:
 
 
 		# separate each by agent (IPPO, will allow for async updates)
-		self.num_agents = num_agents 
+		self.num_agents = num_agents
+
 
 		if self.roles: 
 			self.actors = [policy_class(self.obs_dim, self.act_dim + 2 if i % 2 == 1 else self.act_dim) for i in range(self.num_agents)]
@@ -138,6 +140,14 @@ class PPO:
 
 			self.actor_optims = [Adam(self.actors[i].parameters(), lr=self.lr) for i in range(self.num_agents)]
 			self.critic_optims = [Adam(self.critics[i].parameters(), lr=self.lr) for i in range(self.num_agents)]
+
+		if len(checkpoints) == self.num_agents: 
+			print(f'loading from checkpoint')
+			for indx, checkpoint in enumerate(self.checkpoints): 
+				self.actors[indx].load_state_dict(torch.load(checkpoint))
+		else: 
+			print('error in size mismatch, try again with corrected version')
+			
 
 		# Initialize the covariance matrix used to query the actor for actions
 		self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
