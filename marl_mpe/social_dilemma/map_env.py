@@ -133,6 +133,8 @@ class MapEnv(MultiAgentEnv):
         self.bayes_max = globals.max_delay
 
         self.gifting = globals.gifting
+        if self.gifting: 
+            self.hit_dict = {}
 
         # assert self.bayes != self.gifting # make sure not accidentally being used together
 
@@ -320,38 +322,31 @@ class MapEnv(MultiAgentEnv):
                 agent_max.bayes.advance(agent_max.curr_restraint, 1)
 
         elif self.gifting: 
-            pass 
-            # each agent can dist some of reward to others
-            # rewards_original = {}
-            # amount_to_distribute = {}
 
-            # # print(f'self.agents: {self.agents}')
-            # i = 0 
-            # for agent in self.agents.values(): 
-            #     curr_key = f'agent-{i}'
-            #     curr_reward = agent.compute_reward(reset = True)
+            val_to_add = {}
+            for a in self.hit_dict: 
+                agents_hit = self.hit_dict[a]
+                num_hit = len(self.hit_dict)
+                distributed = 1 / num_hit
+
+                for a in agents_hit:
+                    if a in val_to_add: 
+                        val_to_add[a] += distributed
+                    else: 
+                        val_to_add[a] += distributed
+
+            rewards_original = {}
+
+            i = 0 
+            for agent in self.agents.values(): 
+                curr_key = f'agent-{i}'
+
+                if agent in val_to_add: 
+                    curr_reward = agent.compute_reward(reset = True) + val_to_add[curr_key]
                 
-            #     agent.curr_restraint -= 1 
-            #     rewards_original[curr_key] = curr_reward
-            #     # find amount to distribute to each agent except themselves 
-            #     amount_to_distribute[curr_key] = rewards_original[curr_key] * ((1/(self.num_agents + 1))*0.2) # TODO: may need a better way to do this
-            #     rewards_original[curr_key] = rewards_original[curr_key] - (amount_to_distribute[curr_key] * self.num_agents) # update so that amount is deducted
+                rewards_original[curr_key] = curr_reward
 
-            #     i += 1 
-
-            # i = 0 
-            # i_other = 0 
-            # for agent in self.agents.values():
-            #     curr_key = f'agent-{i}'
-            #     for other_agent in self.agents.values():
-            #         other_curr_key = f'agent-{i_other}'
-            #         if agent != other_agent: 
-            #             rewards_original[other_curr_key] += amount_to_distribute[curr_key]   
-
-            #         i_other += 1
-
-            #     i_other = 0 
-            #     i += 1
+                i += 1 
 
             
         observations = {}
@@ -857,7 +852,7 @@ class MapEnv(MultiAgentEnv):
 
     def update_map_fire(
         self,
-        firing_pos,
+        firing_pos, 
         firing_orientation,
         fire_len,
         fire_char,
@@ -865,6 +860,7 @@ class MapEnv(MultiAgentEnv):
         update_char=[],
         blocking_cells=b"P",
         beam_width=3,
+        agent="", # where agent is when firing
     ):
         """From a firing position, fire a beam that may clean or hit agents
 
@@ -901,6 +897,10 @@ class MapEnv(MultiAgentEnv):
         updates: (tuple (row, col, char))
             the cells that have been hit by the beam and what char will be placed there
         """
+
+        if self.gifting:
+            self.hit_dict[agent] = []
+
         agent_by_pos = {tuple(agent.pos): agent_id for agent_id, agent in self.agents.items()}
         start_pos = np.asarray(firing_pos)
         firing_direction = ORIENTATIONS[firing_orientation]
@@ -937,6 +937,9 @@ class MapEnv(MultiAgentEnv):
                     # activate the agents hit function if needed
                     if [next_cell[0], next_cell[1]] in self.agent_pos:
                         agent_id = agent_by_pos[(next_cell[0], next_cell[1])]
+                        if self.gifting: 
+                            self.hit_dict[agent] = self.hit_dict[agent].append(agent_id)
+
                         self.agents[agent_id].hit(fire_char)
                         break
 

@@ -106,6 +106,7 @@ class HarvestEnv(MapEnv):
                 agent.get_orientation(),
                 self.all_actions["FIRE"],
                 fire_char=b"F",
+                agent=agent.agent_id
             )
 
         return updates
