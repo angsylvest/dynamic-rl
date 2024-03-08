@@ -12,9 +12,12 @@ import globals as globals
 APPLE_RADIUS = 2
 
 # Add custom actions to the agent
-# _HARVEST_ACTIONS = {"FIRE": 5}  # length of firing range
 
-_HARVEST_ACTIONS = {}  # empty for now
+if globals.gifting: 
+    _HARVEST_ACTIONS = {"FIRE": 5}  # length of firing range
+else: 
+    _HARVEST_ACTIONS = {}  # empty for now
+
 
 SPAWN_PROB = [0, 0.005, 0.02, 0.05]
 

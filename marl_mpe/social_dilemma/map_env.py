@@ -329,22 +329,24 @@ class MapEnv(MultiAgentEnv):
                 num_hit = len(self.hit_dict)
                 distributed = 1 / num_hit
 
+                # print(f'agents hit {self.hit_dict} for key {a}')
                 for a in agents_hit:
                     if a in val_to_add: 
                         val_to_add[a] += distributed
                     else: 
-                        val_to_add[a] += distributed
+                        val_to_add[a] = distributed
 
             rewards_original = {}
 
             i = 0 
             for agent in self.agents.values(): 
                 curr_key = f'agent-{i}'
-
-                if agent in val_to_add: 
-                    curr_reward = agent.compute_reward(reset = True) + val_to_add[curr_key]
+                reward_original = agent.compute_reward(reset = True)
+                if curr_key in val_to_add: 
+                    curr_reward = reward_original + val_to_add[curr_key]
+                    # print(f'updating reward to : {curr_reward} compared to original {reward_original}')
                 
-                rewards_original[curr_key] = curr_reward
+                rewards_original[curr_key] = reward_original
 
                 i += 1 
 
@@ -938,9 +940,11 @@ class MapEnv(MultiAgentEnv):
                     if [next_cell[0], next_cell[1]] in self.agent_pos:
                         agent_id = agent_by_pos[(next_cell[0], next_cell[1])]
                         if self.gifting: 
-                            self.hit_dict[agent] = self.hit_dict[agent].append(agent_id)
+                            # print(f'appending: {agent_id}')
+                            self.hit_dict[agent].append(agent_id)
 
-                        self.agents[agent_id].hit(fire_char)
+
+                        self.agents[agent_id].hit(fire_char, split_cost=0)
                         break
 
                     # check if the cell blocks beams. For example, waste blocks beams.

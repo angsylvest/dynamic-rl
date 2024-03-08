@@ -46,7 +46,6 @@ obs_types = ["simple pos", "simple pos and local occupancy", "simple pos and vec
 obs_type = obs_types[0]
 time_delay = False
 nonholonomic = False
-gifting = False 
 share_orientation = False
 # policy_type = f"simple_pos + time_delay_{time_delay}" # just way to label policies 
 policy_type = f"env_type_{env_type}_num_agents_{num_agents}_bayes_{globals.bayes}_gifting_{globals.gifting}_envused_{env_used}"
@@ -56,5 +55,5 @@ checkpoint_dir = f"/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoint
 # Create the directory if it doesn't exist
 os.makedirs(checkpoint_dir, exist_ok=True)
 
-model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, roles = False, checkpoint_dir = checkpoint_dir, gifting = gifting, time_delay = time_delay, share_orientation= share_orientation, env_type = env_type)
+model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, roles = False, checkpoint_dir = checkpoint_dir, gifting = globals.gifting, time_delay = time_delay, share_orientation= share_orientation, env_type = env_type)
 model.learn(total_timesteps=200_000_000)
