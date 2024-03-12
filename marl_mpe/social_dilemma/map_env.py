@@ -355,16 +355,19 @@ class MapEnv(MultiAgentEnv):
                     curr_reward = reward_original + val_to_add[curr_key]
                     # print(f'updating reward to : {curr_reward} compared to original {reward_original}')
                 
-                # rewards_original[curr_key] = reward_original
+                else: 
+                    curr_reward = reward_original
+
+                rewards_original[curr_key] = reward_original
                 updated_dict[curr_key] = curr_reward
 
                 i += 1 
 
-        rewards_for_agents = {}
-        for agent_id, reward in reward_original.items():
-            other_agent_ids = [id for id in reward_original.keys() if id != agent_id]
-            other_agent_rewards = [reward_original[id] for id in other_agent_ids]
-            rewards_for_agents[agent_id] = other_agent_rewards
+            rewards_for_agents = {}
+            for agent_id, reward in updated_dict.items():
+                other_agent_ids = [id for id in reward_original.keys() if id != agent_id]
+                other_agent_rewards = [reward_original[id] for id in other_agent_ids]
+                rewards_for_agents[agent_id] = other_agent_rewards
 
             
         observations = {}
