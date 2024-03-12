@@ -179,7 +179,8 @@ class PPO:
 
 		
 		# Initialize the Matplotlib plot
-		plt.ion()  # Turn on interactive mode
+		if globals.interactive_mode: 
+			plt.ion()  # Turn on interactive mode
 		# Create a figure with two subplots
 		fig, (ax_total, ax_agents) = plt.subplots(2, 1)
 		line_total, = ax_total.plot([], [], label='Total Average Episodic Return')
@@ -344,8 +345,9 @@ class PPO:
 
 
 		# Close the plot after training
-		plt.ioff()
-		plt.show()
+		if globals.interactive_mode: 
+			plt.ioff()
+			plt.show()
 
 	def rollout(self):
 		"""
