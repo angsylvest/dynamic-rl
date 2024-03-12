@@ -182,6 +182,13 @@ class MapEnv(MultiAgentEnv):
                     shape=(1, ),
                     dtype=np.uint8,
                 )
+                ,
+                "other_agents_rewards": Box(
+                    low=0,
+                    high=1,
+                    shape=(self.num_agents - 1,),
+                    dtype=np.uint8,
+                )
             }
 
         obs_space = Dict(obs_space)
@@ -337,8 +344,10 @@ class MapEnv(MultiAgentEnv):
                         val_to_add[a] = distributed
 
             rewards_original = {}
+            updated_dict = {}
 
             i = 0 
+
             for agent in self.agents.values(): 
                 curr_key = f'agent-{i}'
                 reward_original = agent.compute_reward(reset = True)
@@ -346,9 +355,16 @@ class MapEnv(MultiAgentEnv):
                     curr_reward = reward_original + val_to_add[curr_key]
                     # print(f'updating reward to : {curr_reward} compared to original {reward_original}')
                 
-                rewards_original[curr_key] = reward_original
+                # rewards_original[curr_key] = reward_original
+                updated_dict[curr_key] = curr_reward
 
                 i += 1 
+
+        rewards_for_agents = {}
+        for agent_id, reward in reward_original.items():
+            other_agent_ids = [id for id in reward_original.keys() if id != agent_id]
+            other_agent_rewards = [reward_original[id] for id in other_agent_ids]
+            rewards_for_agents[agent_id] = other_agent_rewards
 
             
         observations = {}
@@ -357,6 +373,7 @@ class MapEnv(MultiAgentEnv):
         infos = {}
 
         i_dict = 0 
+
         for agent in self.agents.values():
             reward_key = f'agent-{i_dict}'
             agent.full_map = map_with_agents
@@ -375,6 +392,7 @@ class MapEnv(MultiAgentEnv):
                     "visible_agents": visible_agents,
                     "prev_visible_agents": agent.prev_visible_agents,
                     "bayes_counter": np.array([agent.curr_restraint]),
+                    "other_agents_rewards": np.array(rewards_for_agents[agent.agent_id]),
                 }
                     agent.prev_visible_agents = visible_agents
 
@@ -393,11 +411,12 @@ class MapEnv(MultiAgentEnv):
                 else: 
                     observations[agent.agent_id] = {"curr_obs": rgb_arr}
 
-            rewards[agent.agent_id] = agent.compute_reward() if not self.gifting else rewards_original[reward_key]
+            rewards[agent.agent_id] = agent.compute_reward() if not self.gifting else updated_dict[reward_key]
             i_dict += 1 
             # rewards[agent.agent_id] = agent.compute_reward()
             dones[agent.agent_id] = agent.get_done()
             infos[agent.agent_id] = {}
+
 
         if self.use_collective_reward:
             collective_reward = sum(rewards.values())

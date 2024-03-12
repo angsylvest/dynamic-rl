@@ -74,7 +74,8 @@ class PPO:
 					np.prod(env.observation_space["other_agent_actions"].shape) +
 					np.prod(env.observation_space["visible_agents"].shape) +
 					np.prod(env.observation_space["prev_visible_agents"].shape) + 
-					np.prod(env.observation_space["bayes_counter"].shape)
+					np.prod(env.observation_space["bayes_counter"].shape) + 
+					np.prod(env.observation_space["other_agents_rewards"].shape)
 				)
 
 			else: 
@@ -437,6 +438,7 @@ class PPO:
 								"visible_agents": obs[agent_id]["visible_agents"],
 								"prev_visible_agents": obs[agent_id]["prev_visible_agents"], 
 								"bayes_counter": obs[agent_id]["bayes_counter"], 
+								"other_agents_rewards": obs[agent_id]["other_agents_rewards"], 
 							}
 
 							# Concatenate the observation components
@@ -446,6 +448,7 @@ class PPO:
 								agent_observation["visible_agents"],
 								agent_observation["prev_visible_agents"], 
 								agent_observation["bayes_counter"], 
+								agent_observation["other_agents_rewards"], 
 							))
 
 
@@ -508,7 +511,8 @@ class PPO:
 							"other_agent_actions": obs[agent_id]["other_agent_actions"],
 							"visible_agents": obs[agent_id]["visible_agents"],
 							"prev_visible_agents": obs[agent_id]["prev_visible_agents"],
-							"bayes_counter": obs[agent_id]["bayes_counter"] 
+							"bayes_counter": obs[agent_id]["bayes_counter"], 
+							"other_agents_rewards": obs[agent_id]["other_agents_rewards"],
 						}
 							# Concatenate the observation components
 							concatenated_observation = np.concatenate([
@@ -517,6 +521,7 @@ class PPO:
 								agent_observation["visible_agents"],
 								agent_observation["prev_visible_agents"], 
 								agent_observation["bayes_counter"], 
+								agent_observation["other_agents_rewards"], 
 							])
 
 
