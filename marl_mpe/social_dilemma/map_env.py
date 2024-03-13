@@ -136,6 +136,8 @@ class MapEnv(MultiAgentEnv):
         if self.gifting: 
             self.hit_dict = {}
 
+        self.rewards_for_agents = {}
+
         # assert self.bayes != self.gifting # make sure not accidentally being used together
 
     @property
@@ -328,6 +330,12 @@ class MapEnv(MultiAgentEnv):
                 agent_max.curr_restraint = agent_max.bayes.sample_action()
                 agent_max.bayes.advance(agent_max.curr_restraint, 1)
 
+            self.rewards_for_agents = {}
+            for agent_id, reward in rewards_original.items():
+                other_agent_ids = [id for id in rewards_original.keys() if id != agent_id]
+                other_agent_rewards = [rewards_original[id] for id in other_agent_ids]
+                self.rewards_for_agents[agent_id] = other_agent_rewards
+
         elif self.gifting: 
 
             val_to_add = {}
@@ -353,7 +361,7 @@ class MapEnv(MultiAgentEnv):
                 reward_original = agent.compute_reward(reset = True)
                 if curr_key in val_to_add: 
                     curr_reward = reward_original + val_to_add[curr_key]
-                    # print(f'updating reward to : {curr_reward} compared to original {reward_original}')
+                    print(f'updating reward to : {curr_reward} compared to original {reward_original}')
                 
                 else: 
                     curr_reward = reward_original
@@ -363,13 +371,13 @@ class MapEnv(MultiAgentEnv):
 
                 i += 1 
 
-            rewards_for_agents = {}
-            for agent_id, reward in updated_dict.items():
-                other_agent_ids = [id for id in reward_original.keys() if id != agent_id]
-                other_agent_rewards = [reward_original[id] for id in other_agent_ids]
-                rewards_for_agents[agent_id] = other_agent_rewards
+                self.rewards_for_agents = {}
+                for agent_id, reward in updated_dict.items():
+                    other_agent_ids = [id for id in rewards_original.keys() if id != agent_id]
+                    other_agent_rewards = [rewards_original[id] for id in other_agent_ids]
+                    self.rewards_for_agents[agent_id] = other_agent_rewards
 
-            
+        # print(f'original rewards: {rewards_original}')
         observations = {}
         rewards = {}
         dones = {}
@@ -395,7 +403,7 @@ class MapEnv(MultiAgentEnv):
                     "visible_agents": visible_agents,
                     "prev_visible_agents": agent.prev_visible_agents,
                     "bayes_counter": np.array([agent.curr_restraint]),
-                    "other_agents_rewards": np.array(rewards_for_agents[agent.agent_id]),
+                    "other_agents_rewards": np.array(self.rewards_for_agents[agent.agent_id]),
                 }
                     agent.prev_visible_agents = visible_agents
 
@@ -410,11 +418,13 @@ class MapEnv(MultiAgentEnv):
                     agent.prev_visible_agents = visible_agents
             else:
                 if self.bayes: 
-                    observations[agent.agent_id] = {"curr_obs": rgb_arr, "bayes_counter": np.array([agent.curr_restraint] )}
+                    observations[agent.agent_id] = {"curr_obs": rgb_arr, "bayes_counter": np.array([agent.curr_restraint] ), "other_agents_rewards": np.array(self.rewards_for_agents[agent.agent_id])}
                 else: 
                     observations[agent.agent_id] = {"curr_obs": rgb_arr}
 
+
             rewards[agent.agent_id] = agent.compute_reward() if not self.gifting else updated_dict[reward_key]
+            # print(f'rewards for agent: {rewards[agent.agent_id]}')
             i_dict += 1 
             # rewards[agent.agent_id] = agent.compute_reward()
             dones[agent.agent_id] = agent.get_done()
@@ -458,6 +468,13 @@ class MapEnv(MultiAgentEnv):
 
         map_with_agents = self.get_map_with_agents()
 
+        if self.bayes: 
+            self.rewards_for_agents = {}
+            for agent in self.agents.values():
+                other_rewards = [0 for i in range(self.num_agents - 1)]
+                self.rewards_for_agents[agent.agent_id] = other_rewards 
+
+
         observations = {}
         for agent in self.agents.values():
             agent.full_map = map_with_agents
@@ -475,6 +492,8 @@ class MapEnv(MultiAgentEnv):
                         "visible_agents": visible_agents,
                         "prev_visible_agents": visible_agents,
                         "bayes_counter": np.array([agent.curr_restraint]),
+                        "other_agents_rewards": np.array(self.rewards_for_agents[agent.agent_id])
+
                     }
 
                 else: 

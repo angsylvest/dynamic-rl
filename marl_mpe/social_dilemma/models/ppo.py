@@ -23,7 +23,7 @@ class PPO:
 	"""
 		This is the PPO class we will use as our model in main.py
 	"""
-	def __init__(self, policy_class, env, num_agents, policy_type, checkpoint_dir, gifting, time_delay, share_orientation, env_type, roles, checkpoints, **hyperparameters):
+	def __init__(self, policy_class, env, num_agents, policy_type, checkpoint_dir, gifting, time_delay, share_orientation, env_type, roles, checkpoints, critics, **hyperparameters):
 		"""
 			Initializes the PPO model, including hyperparameters.
 
@@ -146,6 +146,15 @@ class PPO:
 			print(f'loading from checkpoint')
 			for indx, checkpoint in enumerate(self.checkpoints): 
 				self.actors[indx].load_state_dict(torch.load(checkpoint))
+				self.actors[indx].train()
+				self.critics[indx].load_state_dict(torch.load(critics[indx]))
+
+			# self.actors = [policy_class(self.obs_dim, self.act_dim) for i in range(self.num_agents)]
+			# self.critics = [policy_class(self.obs_dim, 1) for i in range(self.num_agents)]
+
+			self.actor_optims = [Adam(self.actors[i].parameters(), lr=self.lr) for i in range(self.num_agents)]
+			self.critic_optims = [Adam(self.critics[i].parameters(), lr=self.lr) for i in range(self.num_agents)]
+
 		else: 
 			print('error in size mismatch, try again with corrected version')
 			
