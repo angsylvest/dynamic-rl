@@ -7,7 +7,7 @@ import globals as globals
 import os 
 
 model_name = ""
-num_agents =  8
+num_agents =  5
 
 env_used = globals.environment_used
 
