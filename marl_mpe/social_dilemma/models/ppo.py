@@ -336,8 +336,8 @@ class PPO:
 					# torch.save(self.actor.state_dict(), './ppo_actor.pth')
 					# torch.save(self.critic.state_dict(), './ppo_critic.pth')
 					for a in range(self.num_agents): 
-						torch.save(self.actors[i].state_dict(), f'{self.checkpoint_dir}/ppo_actor_{i_so_far}_agent_{a}.pth')
-						torch.save(self.critics[i].state_dict(), f'{self.checkpoint_dir}/ppo_critic_{i_so_far}_agent_{a}.pth')
+						torch.save(self.actors[a].state_dict(), f'{self.checkpoint_dir}/ppo_actor_{i_so_far}_agent_{a}.pth')
+						torch.save(self.critics[a].state_dict(), f'{self.checkpoint_dir}/ppo_critic_{i_so_far}_agent_{a}.pth')
 
 					# Save dynamic graph or relevant information
 					plt.savefig(f'dynamic_graph_interrupted_{self.policy_type}.png')  # Adjust the filename and format as needed
