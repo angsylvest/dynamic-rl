@@ -120,7 +120,7 @@ class CleanupEnv(MapEnv):
                 fire_char=b"F",
                 agent=agent.agent_id
             )
-        # elif action == "CLEAN":
+
         elif action == "CLEAN":
             # print('we cleaning')
             agent.fire_beam(b"C")

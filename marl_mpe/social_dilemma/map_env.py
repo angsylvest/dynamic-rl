@@ -309,11 +309,14 @@ class MapEnv(MultiAgentEnv):
 
         if self.bayes: 
             rewards_original = {}
+            deficit_info = {}
+
             # print(f'self.agents: {self.agents}')
             i = 0 
             for agent in self.agents.values(): 
                 curr_key = f'agent-{i}'
                 curr_reward = agent.compute_reward(reset = False)
+                deficit_info[curr_key] = agent.accrued_debt
                 
                 agent.curr_restraint -= 1 
                 rewards_original[curr_key] = curr_reward
@@ -324,11 +327,15 @@ class MapEnv(MultiAgentEnv):
             # agent_max = self.agents[max_key]
             max_key = max(rewards_original, key=lambda k: rewards_original[k])
             min_key = min(rewards_original, key=lambda k: rewards_original[k])
+            total_deficit = sum(deficit_info[item] for item in deficit_info)
 
             if rewards_original[max_key] - rewards_original[min_key] > 2:
                 agent_max = self.agents[max_key]
+
                 agent_max.curr_restraint = agent_max.bayes.sample_action()
                 agent_max.bayes.advance(agent_max.curr_restraint, 1)
+
+                agent_max.reward_this_turn -= total_deficit
 
             self.rewards_for_agents = {}
             for agent_id, reward in rewards_original.items():

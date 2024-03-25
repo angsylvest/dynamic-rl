@@ -55,6 +55,7 @@ class Agent(object):
         self.consume_reward = 1 # normally 1 but would be scaled if practicing restraint
 
         self.gifting = globals.gifting
+        self.accrued_debt = 0
 
         assert self.gifting != self.bayes # ensure that they are not being used together
     
@@ -100,6 +101,10 @@ class Agent(object):
 
         if reset: 
             self.reward_this_turn = 0
+
+            if globals.bayes: 
+                self.accrued_debt = 0 
+                self.consume_reward = 1
 
         return reward
 
@@ -255,7 +260,6 @@ class CleanupAgent(Agent):
         self.update_agent_pos(start_pos)
         self.update_agent_rot(start_orientation)
 
-        self.accrued_debt = 0
 
     # Ugh, this is gross, this leads to the actions basically being
     # defined in two places
@@ -269,13 +273,15 @@ class CleanupAgent(Agent):
             print(f'fire beaming reward this turn: {self.reward_this_turn}')
 
         if char == b"C" and self.bayes: 
+
+            # if cleaning will get temporary reward (from someone else)
             if self.consume_reward > 0: 
                 self.reward_this_turn += 0.1
                 self.accrued_debt += 0.1
 
-                self.consume_reward -= 0.1 # hopefully will induce heterogeneity
+                # self.consume_reward -= 0.1 # hopefully will induce heterogeneity
                 
-            self.curr_restraint = 0
+            # self.curr_restraint = 0
 
 
     def get_done(self):
