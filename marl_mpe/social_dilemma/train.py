@@ -50,14 +50,18 @@ share_orientation = False
 # policy_type = f"simple_pos + time_delay_{time_delay}" # just way to label policies 
 policy_type = f"env_type_{env_type}_num_agents_{num_agents}_bayes_{globals.bayes}_gifting_{globals.gifting}_envused_{env_used}"
 
-checkpoint_dir = f"/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/{policy_type}" 
+if not globals.hpc:
+    checkpoint_dir = f"/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/{policy_type}" 
+else: 
+    checkpoint_dir = f"~/dynamic-rl/dynamic-rl/marl_mpe/checkpoints/{policy_type}"
 
 # Create the directory if it doesn't exist
 os.makedirs(checkpoint_dir, exist_ok=True)
-# checkpoints = ['marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_harvest_70/ppo_actor_70_agent_0.pth', 'marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_harvest_70/ppo_actor_70_agent_1.pth', 'marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_harvest_70/ppo_actor_70_agent_2.pth', 'marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_harvest_70/ppo_actor_70_agent_3.pth', 'marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_harvest_70/ppo_actor_70_agent_4.pth']
-# critics = ['marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_harvest_70/ppo_critic_70_agent_0.pth', 'marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_harvest_70/ppo_critic_70_agent_1.pth', 'marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_harvest_70/ppo_critic_70_agent_2.pth', 'marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_harvest_70/ppo_critic_70_agent_3.pth', 'marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_harvest_70/ppo_critic_70_agent_4.pth']
 
-checkpoints = []
-critics = []
+checkpoints = ['/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_actor_10_agent_0.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_actor_10_agent_1.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_actor_10_agent_2.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_actor_10_agent_3.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_actor_10_agent_4.pth']
+critics = ['/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_critic_10_agent_0.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_critic_10_agent_1.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_critic_10_agent_2.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_critic_10_agent_3.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_critic_10_agent_4.pth']
+
+# checkpoints = []
+# critics = []
 model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, roles = False, checkpoint_dir = checkpoint_dir, gifting = globals.gifting, time_delay = time_delay, share_orientation= share_orientation, env_type = env_type, checkpoints = checkpoints, critics=critics)
 model.learn(total_timesteps=200_000_000)
