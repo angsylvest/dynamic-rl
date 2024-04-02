@@ -112,6 +112,7 @@ class PPO:
 
 		self.csv_filename_per_agent = f'{self.checkpoint_dir}/csv_per_agent.csv'
 		self.csv_filename_cum = f'{self.checkpoint_dir}/csv_cum.csv'
+		self.csv_perf = f'{self.checkpoint_dir}/csv_perf.csv'
 
 		# Initialize CSV file with column names
 		with open(self.csv_filename_per_agent, 'w', newline='') as csvfile:
@@ -122,6 +123,11 @@ class PPO:
 		with open(self.csv_filename_cum, 'w', newline='') as csvfile:
 			writer = csv.writer(csvfile)
 			writer.writerow(['Iteration', 'Average_Reward'])
+
+		# Initialize CSV file with column names
+		with open(self.csv_perf, 'w', newline='') as csvfile:
+			writer = csv.writer(csvfile)
+			writer.writerow(['Iteration', 'Avg Collected'])
 
 
 		# separate each by agent (IPPO, will allow for async updates)
@@ -171,6 +177,7 @@ class PPO:
 			'batch_lens': [],       # episodic lengths in batch
 			'batch_rews': [],       # episodic returns in batch
 			'actor_losses': [],     # losses of actor network in current iteration
+			'num_collected': [],
 		}
 
 	def learn(self, total_timesteps):
@@ -318,6 +325,7 @@ class PPO:
 				avg_ep_rews_total = np.mean([plot_metrics[a] for a in range(self.num_agents)])
 				self._update_live_plot(ax_total, line_total, i_so_far, avg_ep_rews_total, i_so_far, "total", self.csv_filename_cum)
 
+
 				# Update the live plot for each agent's average episodic return
 				for agent_id, line in agent_lines.items():
 					avg_ep_rews_agent = plot_metrics[agent_id]
@@ -412,12 +420,16 @@ class PPO:
 			else: 
 				obs = self.env.reset()
 
+			infos = None 
 			# print(f'obs after env reset {obs}')
 
 			# each index is val for epi for each agent 
 			dones = []
 			actions = []
 			log_probs = []
+
+			total_collected = 0 
+			col_stats = []
 
 			# print('env reset (max timesteps )')
 
@@ -480,6 +492,9 @@ class PPO:
 							))
 
 						batch_obs[i].append(concatenated_observation)
+
+						if infos != None: 
+							total_collected +=  infos[agent_id]['num_collected'] # TODO: need way to get this info from agent class
 
 					else: 
 						if self.share_orientation: 
@@ -568,7 +583,7 @@ class PPO:
 
 					actions = act
 
-					obs, rews, dones, _ = self.env.step(actions)
+					obs, rews, dones, infos = self.env.step(actions)
 
 				else:
 					obs, rews, dones, _, _ = self.env.step(actions)
@@ -604,6 +619,7 @@ class PPO:
 
 			# Track episodic lengths and rewards
 			batch_lens.append(ep_t + 1)
+			col_stats.append(total_collected)
 
 			for i in range(self.num_agents): 
 				batch_rews[i].append(ep_rews[i])
@@ -629,6 +645,7 @@ class PPO:
 		# Log the episodic returns and episodic lengths in this batch.
 		self.logger['batch_rews'] = batch_rews
 		self.logger['batch_lens'] = batch_lens
+		self.logger['num_collected'] = col_stats
 
 		return batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens
 
@@ -663,6 +680,8 @@ class PPO:
 		return batch_rtgs
 		
 	def _update_live_plot(self, ax, line, x, y, iteration, agent_id, csv_filename):
+		
+		
 		if not line:
 			# If the line does not exist, create a new line
 			line, = ax.plot([], [], label='Total Average Episodic Return')
@@ -674,7 +693,7 @@ class PPO:
 		ax.autoscale_view()  # Autoscale the view
 		ax.figure.canvas.draw()
 
-		
+
 		# Save data to CSV
 		with open(csv_filename, 'a', newline='') as csvfile:
 			writer = csv.writer(csvfile)
@@ -682,6 +701,11 @@ class PPO:
 				writer.writerow([iteration, agent_id, y])
 			else: 
 				writer.writerow([iteration, y])
+
+		if agent_id == 'total':
+			with open(self.csv_perf, 'a', newline='') as csvfile: 
+				writer = csv.writer(csvfile)
+				writer.writerow([iteration, self.logger['num_collected']]) # iteration, total_reward 
 
 
 
@@ -830,3 +854,4 @@ class PPO:
 		self.logger['batch_lens'] = []
 		self.logger['batch_rews'] = []
 		self.logger['actor_losses'] = []
+		self.logger['num_collected'] = []

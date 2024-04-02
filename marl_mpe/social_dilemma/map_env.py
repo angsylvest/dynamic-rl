@@ -435,7 +435,7 @@ class MapEnv(MultiAgentEnv):
             i_dict += 1 
             # rewards[agent.agent_id] = agent.compute_reward()
             dones[agent.agent_id] = agent.get_done()
-            infos[agent.agent_id] = {}
+            infos[agent.agent_id] = agent.agent_perf # this is a dict
 
 
         if self.use_collective_reward:

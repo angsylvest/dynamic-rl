@@ -57,6 +57,8 @@ class Agent(object):
         self.gifting = globals.gifting
         self.accrued_debt = 0
 
+        self.agent_perf = {'num_collected': 0, 'time_waited': 0}
+
         assert self.gifting != self.bayes # ensure that they are not being used together
     
     @property
@@ -124,6 +126,9 @@ class Agent(object):
 
     def get_orientation(self):
         return self.orientation
+    
+    def reset_metrics(self): 
+        self.agent_perf = {'num_collected': 0, 'time_waited': 0}
 
     def return_valid_pos(self, new_pos):
         """Checks that the next pos is legal, if not return current pos"""
@@ -209,11 +214,14 @@ class HarvestAgent(Agent):
 
     def get_done(self):
         return False
+    
 
     def consume(self, char):
         """Defines how an agent interacts with the char it is standing on"""
         if self.using_bayes: 
             if char == b"A":
+                self.agent_perf['num_consumed'] += 1
+
                 if self.curr_restraint > 0: 
                     self.consume_reward *= 0.25 # only get quarter of current reward
                     self.reward_this_turn += self.consume_reward # 0.5 # less gain if acting against restraint
@@ -298,6 +306,8 @@ class CleanupAgent(Agent):
         # """Defines how an agent interacts with the char it is standing on"""
         if self.using_bayes: 
             if char == b"A":
+                self.agent_perf['num_consumed'] += 1
+
                 # get amount of time waited 
                 if self.curr_restraint > 0: 
                     self.reward_this_turn += self.consume_reward # 0.5 # less gain if acting against restraint
