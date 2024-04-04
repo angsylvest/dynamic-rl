@@ -4,6 +4,24 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
+def extract_paths(checkpoint_path): 
+    """
+    Create paths relevant to actor and critic if loading from checkpoint
+    """
+    actor_paths = []
+    critic_paths = []
+
+    if len(checkpoint_path) != 0: 
+        for filename in os.listdir(checkpoint_path):
+            if filename.startswith("ppo_actor_") and filename.endswith(".pth"):
+                actor_paths.append(os.path.join(checkpoint_path, filename))
+            elif filename.startswith("ppo_critic_") and filename.endswith(".pth"):
+                critic_paths.append(os.path.join(checkpoint_path, filename))
+
+        return actor_paths, critic_paths
+    else: 
+        return actor_paths, critic_paths
+
 
 def save_img(rgb_arr, path, name):
     plt.imshow(rgb_arr, interpolation="nearest")

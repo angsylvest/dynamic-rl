@@ -35,8 +35,6 @@ class PPO:
 			Returns:
 				None
 		"""
-		# print(f'current env: {env}')
-
 		# Extract environment information
 		self.env = env
 		self.env_type = env_type
@@ -61,8 +59,6 @@ class PPO:
 		# Extract environment information
 		self.env = env
 		self.env_type = env_type
-		# self.obs_dim = env.observation_space[0].shape[0]
-
 		self.bayes = globals.bayes 
 
 
@@ -90,9 +86,6 @@ class PPO:
 			# Account for multiple agents by multiplying by the number of agents
 			self.obs_dim = obs_size # obs_size_per_agent
 			self.act_dim = env.action_space.n
-			# self.act_dim_follower = env.action_space_roles.n
-
-			# print(f'updated obs_dim: {self.obs_dim}')
 		
 		else: 
 			if self.share_orientation: 
@@ -127,7 +120,7 @@ class PPO:
 		# Initialize CSV file with column names
 		with open(self.csv_perf, 'w', newline='') as csvfile:
 			writer = csv.writer(csvfile)
-			writer.writerow(['Iteration', 'Avg Collected'])
+			writer.writerow(['Iteration', 'Custom Metrics'])
 
 
 		# separate each by agent (IPPO, will allow for async updates)
@@ -154,9 +147,6 @@ class PPO:
 				self.actors[indx].load_state_dict(torch.load(checkpoint))
 				self.actors[indx].train()
 				self.critics[indx].load_state_dict(torch.load(critics[indx]))
-
-			# self.actors = [policy_class(self.obs_dim, self.act_dim) for i in range(self.num_agents)]
-			# self.critics = [policy_class(self.obs_dim, 1) for i in range(self.num_agents)]
 
 			self.actor_optims = [Adam(self.actors[i].parameters(), lr=self.lr) for i in range(self.num_agents)]
 			self.critic_optims = [Adam(self.critics[i].parameters(), lr=self.lr) for i in range(self.num_agents)]
@@ -234,7 +224,6 @@ class PPO:
 				self.logger['t_so_far'] = t_so_far
 				self.logger['i_so_far'] = i_so_far
 
-
 				# update process (will occur for each agent's model)
 
 				for i in range(self.num_agents): 
@@ -299,24 +288,14 @@ class PPO:
 				for a in range(self.num_agents):
 					plot_metrics[a] = 0
 					batch_rews_a = self.logger['batch_rews'][a]
-					
-					# total_rewards_a = sum(sum(ep_rewards) for ep_rewards in batch_rews_a)
-					# total_episodes_a = sum(len(ep_rewards) for ep_rewards in batch_rews_a)
+
 					num_ep = 0 
 					total_avgs = 0 
 					for ep in batch_rews_a: 
 						avg = sum(ep) / len(ep)
 						num_ep += 1
 						total_avgs += avg 
-						# print(f'running avg: {avg} for {sum(ep)} for ep size {len(ep)}')
-					# total_rewards_a = (sum(ep_rewards) for ep_rewards in batch_rews_a)
-					# total_episodes_a = len(batch_rews_a)
-					# total
-						
 
-					# print(f'total_rewards_a: {total_rewards_a} and total_episodes_a: {total_rewards_a}')
-					
-					# plot_metrics[a] = total_rewards_a / total_episodes_a
 					plot_metrics[a] = total_avgs / num_ep
 
 				# print(f'plot metrics after calc: {plot_metrics}')
@@ -332,7 +311,6 @@ class PPO:
 					self._update_live_plot(ax_agents, line, i_so_far, avg_ep_rews_agent, i_so_far, agent_id, self.csv_filename_per_agent)
 					# print(f"avg_ep_rews_agent for agent {agent_id}:", avg_ep_rews_agent)
 
-
 				plt.pause(0.001)
 
 				# Print a summary of our training so far
@@ -341,11 +319,13 @@ class PPO:
 				# Save our model if it's time
 				if i_so_far % self.save_freq == 0:
 					print('saving current checkpoint')
-					# torch.save(self.actor.state_dict(), './ppo_actor.pth')
-					# torch.save(self.critic.state_dict(), './ppo_critic.pth')
+					# Create the directory if it doesn't exist
+					path = f'{self.checkpoint_dir}/iteration_{i_so_far}'
+					os.makedirs(path, exist_ok=True)
+
 					for a in range(self.num_agents): 
-						torch.save(self.actors[a].state_dict(), f'{self.checkpoint_dir}/ppo_actor_{i_so_far}_agent_{a}.pth')
-						torch.save(self.critics[a].state_dict(), f'{self.checkpoint_dir}/ppo_critic_{i_so_far}_agent_{a}.pth')
+						torch.save(self.actors[a].state_dict(), f'{path}/ppo_actor_{i_so_far}_agent_{a}.pth')
+						torch.save(self.critics[a].state_dict(), f'{path}/ppo_critic_{i_so_far}_agent_{a}.pth')
 
 					# Save dynamic graph or relevant information
 					plt.savefig(f'dynamic_graph_interrupted_{self.policy_type}.png')  # Adjust the filename and format as needed
@@ -402,6 +382,7 @@ class PPO:
 		# Episodic data. Keeps track of rewards per episode, will get cleared
 		# upon each new episode
 		ep_rews = {}
+		col_stats = {}
 
 		t = 0 # Keeps track of how many timesteps we've run so far this batch
 
@@ -429,7 +410,6 @@ class PPO:
 			log_probs = []
 
 			total_collected = 0 
-			col_stats = []
 
 			# print('env reset (max timesteps )')
 
@@ -493,9 +473,10 @@ class PPO:
 
 						batch_obs[i].append(concatenated_observation)
 
+						# TODO: make sure this is being added correctly
 						if infos != None: 
-							total_collected +=  infos[agent_id]['num_collected'] # TODO: need way to get this info from agent class
-
+							# total_collected +=  infos[agent_id]['num_collected'] # TODO: need way to get this info from agent class
+							col_stats[agent_id] = infos[agent_id] # should be cumulate perf? 
 					else: 
 						if self.share_orientation: 
 							if self.time_delay: 
@@ -582,13 +563,10 @@ class PPO:
 						act[agent_id] = actions[i]
 
 					actions = act
-
 					obs, rews, dones, infos = self.env.step(actions)
 
 				else:
 					obs, rews, dones, _, _ = self.env.step(actions)
-
-				# print(f'info collected so far: \n obs {obs} \n rews {rews} \n log_probs {log_probs} \n ep_rews {ep_rews}')
 
 				# Track recent reward, action, and action log probability
 				for i in range(self.num_agents): 
@@ -601,12 +579,8 @@ class PPO:
 						batch_log_probs[i].append(log_probs[i].item())
 
 					else: 
-
 						ep_rews[i].append(rews[i])
-						# batch_rews[i].extend(ep_rews[i])
-
 						batch_acts[i].append(actions[i])
-						# print(f'log info : {log_probs[i].item()}')
 						batch_log_probs[i].append(log_probs[i].item())
 
 					# dones.append(done)
@@ -619,16 +593,9 @@ class PPO:
 
 			# Track episodic lengths and rewards
 			batch_lens.append(ep_t + 1)
-			col_stats.append(total_collected)
 
 			for i in range(self.num_agents): 
 				batch_rews[i].append(ep_rews[i])
-
-		# Reshape data as tensors in the shape specified in function description, before returning
-		# batch_obs = torch.tensor(batch_obs, dtype=torch.float)
-		# batch_acts = torch.tensor(batch_acts, dtype=torch.float)
-		# batch_log_probs = torch.tensor(batch_log_probs, dtype=torch.float).flatten()
-		# batch_rtgs = self.compute_rtgs(batch_rews)                                                              # ALG STEP 4
 
 		# convert each obs per agent into tensor 
 		for i in range(self.num_agents):

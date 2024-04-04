@@ -6,6 +6,8 @@ from models.ffn import FeedForwardNN
 import globals as globals 
 import os 
 
+from utility_funcs import * 
+
 model_name = ""
 num_agents =  5
 
@@ -58,10 +60,10 @@ else:
 # Create the directory if it doesn't exist
 os.makedirs(checkpoint_dir, exist_ok=True)
 
-checkpoints = ['/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_actor_10_agent_0.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_actor_10_agent_1.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_actor_10_agent_2.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_actor_10_agent_3.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_actor_10_agent_4.pth']
-critics = ['/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_critic_10_agent_0.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_critic_10_agent_1.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_critic_10_agent_2.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_critic_10_agent_3.pth', '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/ppo_critic_10_agent_4.pth']
+checkpoint_path = "marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/iteration_10" 
+actors, critics = extract_paths(checkpoint_path)
 
 # checkpoints = []
 # critics = []
-model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, roles = False, checkpoint_dir = checkpoint_dir, gifting = globals.gifting, time_delay = time_delay, share_orientation= share_orientation, env_type = env_type, checkpoints = checkpoints, critics=critics)
+model = PPO(policy_class=FeedForwardNN, env=env, num_agents = num_agents, policy_type=policy_type, roles = False, checkpoint_dir = checkpoint_dir, gifting = globals.gifting, time_delay = time_delay, share_orientation= share_orientation, env_type = env_type, checkpoints = actors, critics=critics)
 model.learn(total_timesteps=200_000_000)

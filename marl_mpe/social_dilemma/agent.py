@@ -323,6 +323,7 @@ class CleanupAgent(Agent):
                     return b" "
 
             else:
+                self.agent_perf['time_waited'] += 1
                 return char
 
         else: 
