@@ -60,6 +60,7 @@ else:
 # Create the directory if it doesn't exist
 os.makedirs(checkpoint_dir, exist_ok=True)
 
+# checkpoint example in hpc: ~/dynamic-rl/msi-scripts/~/dynamic-rl/dynamic-rl/marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/iteration_30
 checkpoint_path = "marl_mpe/checkpoints/env_type_social-dilemma_num_agents_5_bayes_True_gifting_False_envused_clean-up/iteration_10" 
 actors, critics = extract_paths(checkpoint_path)
 
