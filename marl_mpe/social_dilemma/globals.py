@@ -5,3 +5,5 @@ gifting = False
 environment_used = "clean-up" # "clean-up" # "harvest"
 interactive_mode = True
 hpc = False
+collective_reward = False
+return_agent_actions = True

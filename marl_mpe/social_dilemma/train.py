@@ -12,12 +12,14 @@ model_name = ""
 num_agents =  5
 
 env_used = globals.environment_used
+collective_reward = globals.collective_reward
+return_agent_actions = globals.return_agent_actions
 
 if env_used == "harvest": 
     # just testing 
     env = HarvestEnv(num_agents=num_agents,
-                return_agent_actions=True,
-                use_collective_reward=False,
+                return_agent_actions=return_agent_actions,
+                use_collective_reward=collective_reward,
                 inequity_averse_reward=True,
                 alpha=0.0,
                 beta=0.0, 
@@ -27,8 +29,8 @@ elif env_used == "clean-up":
     # just testing 
     
     env = CleanupEnv(num_agents=num_agents,
-                return_agent_actions=True,
-                use_collective_reward=False,
+                return_agent_actions=return_agent_actions,
+                use_collective_reward=collective_reward,
                 inequity_averse_reward=True,
                 alpha=0.0,
                 beta=0.0)
@@ -50,7 +52,7 @@ time_delay = False
 nonholonomic = False
 share_orientation = False
 # policy_type = f"simple_pos + time_delay_{time_delay}" # just way to label policies 
-policy_type = f"env_type_{env_type}_num_agents_{num_agents}_bayes_{globals.bayes}_gifting_{globals.gifting}_envused_{env_used}"
+policy_type = f"env_type_{env_type}_num_agents_{num_agents}_bayes_{globals.bayes}_gifting_{globals.gifting}_envused_{env_used}_collect_{collective_reward}_return_agent_{return_agent_actions}"
 
 if not globals.hpc:
     checkpoint_dir = f"/home/angelsylvester/Documents/dynamic-rl/marl_mpe/checkpoints/{policy_type}" 
