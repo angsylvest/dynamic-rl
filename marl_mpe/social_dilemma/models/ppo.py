@@ -328,14 +328,14 @@ class PPO:
 						torch.save(self.critics[a].state_dict(), f'{path}/ppo_critic_{i_so_far}_agent_{a}.pth')
 
 					# Save dynamic graph or relevant information
-					plt.savefig(f'dynamic_graph_interrupted_{self.policy_type}.png')  # Adjust the filename and format as needed
+					plt.savefig(f'{self.checkpoint_dir}/dynamic_graph_interrupted_{self.policy_type}.png')  # Adjust the filename and format as needed
 					print("Dynamic graph saved.")
 
 		except KeyboardInterrupt:
 			print("\nTraining interrupted. Saving current state...")
 
 			# Save dynamic graph or relevant information
-			plt.savefig(f'dynamic_graph_interrupted_{self.policy_type}.png')  # Adjust the filename and format as needed
+			plt.savefig(f'{self.checkpoint_dir}/dynamic_graph_interrupted_{self.policy_type}.png') # Adjust the filename and format as needed
 			print("Dynamic graph saved.")
 
 			# Optionally save the model state here if needed
