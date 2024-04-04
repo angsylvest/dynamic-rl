@@ -47,6 +47,9 @@ if individual_perf != "":
     plt.legend()
     plt.title('Average Reward vs. Iteration for Each Agent')
 
+    # Save the plot as an image file (e.g., PNG or PDF)
+    plt.savefig('line_plot.png')  # Change the filename and extension as needed
+
     # Show the plot
     plt.show()
 
@@ -83,6 +86,9 @@ if custom_metrics != "":
     plt.ylabel('Average Num Collected')
     plt.legend()
     plt.title('Average Num Collected per Iteration')
+
+    # Save the plot as an image file (e.g., PNG or PDF)
+    plt.savefig('line_plot.png')  # Change the filename and extension as needed
 
     # Show the plot
     plt.show()
