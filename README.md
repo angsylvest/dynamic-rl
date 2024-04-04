@@ -4,6 +4,8 @@ The Dynamic RL Test-bed is a low-fidelity environment aimed at evaluating the im
 
 Harvest and Clean-up environments can be found at original repo: https://github.com/eugenevinitsky/sequential_social_dilemma_games
 
+PPO model (from scratch) developed using the following repo as reference: https://github.com/ericyangyu/PPO-for-Beginners/tree/master
+
 ## Key Features
 - Low-fidelity simulation environment
 - Multi-agent system support
