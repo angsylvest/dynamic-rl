@@ -310,6 +310,7 @@ class CleanupAgent(Agent):
 
                 # get amount of time waited 
                 if self.curr_restraint > 0: 
+                    self.consume_reward *= 0.9
                     self.reward_this_turn += self.consume_reward # 0.5 # less gain if acting against restraint
                     # print(f'updating reward is self.curr_restraint is greater than or equal to 0 {self.curr_restraint} for {self.reward_this_turn}')
                     return b""
