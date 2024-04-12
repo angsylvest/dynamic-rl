@@ -7,6 +7,7 @@ from gym.spaces import Box, Dict
 # from ray.rllib.agents.callbacks import DefaultCallbacks
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.env import MultiAgentEnv
+import statistics
 
 import globals as globals 
 
@@ -310,6 +311,7 @@ class MapEnv(MultiAgentEnv):
         if self.bayes: 
             rewards_original = {}
             deficit_info = {}
+            collections = {}
 
             # print(f'self.agents: {self.agents}')
             i = 0 
@@ -321,15 +323,28 @@ class MapEnv(MultiAgentEnv):
                 agent.curr_restraint -= 1 
                 rewards_original[curr_key] = curr_reward
                 i += 1 
+                collections[curr_key] = agent.agent_perf['num_collected']
 
             # print(f'original rewards: {rewards_original}')
             # access the agent with the maximum reward
             # agent_max = self.agents[max_key]
-            max_key = max(rewards_original, key=lambda k: rewards_original[k])
-            min_key = min(rewards_original, key=lambda k: rewards_original[k])
+            # max_key = max(rewards_original, key=lambda k: collections[k])
+            # min_key = min(rewards_original, key=lambda k: collections[k])
             total_deficit = sum(deficit_info[item] for item in deficit_info)
+            
+            # Calculate statistics for rewards
+            rewards = [collections[k] for k in collections]
+            avg_reward = statistics.mean(rewards)
+            max_key = max(collections, key=lambda k: collections[k])
+            max_reward = collections[max_key]
+            std_dev_reward_all = statistics.stdev(rewards)
 
-            if rewards_original[max_key] - rewards_original[min_key] > 2:
+            z_score_max_reward = 0
+
+            if std_dev_reward_all != 0: 
+                z_score_max_reward = (max_reward - avg_reward) / std_dev_reward_all
+
+            if (z_score_max_reward >= 0.8): #rewards_original[max_key] - rewards_original[min_key] > 2:
                 agent_max = self.agents[max_key]
 
                 agent_max.curr_restraint = agent_max.bayes.sample_action()

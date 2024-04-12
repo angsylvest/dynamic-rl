@@ -220,7 +220,7 @@ class HarvestAgent(Agent):
         """Defines how an agent interacts with the char it is standing on"""
         if self.using_bayes: 
             if char == b"A":
-                self.agent_perf['num_consumed'] += 1
+                self.agent_perf['num_collected'] += 1
 
                 if self.curr_restraint > 0: 
                     self.consume_reward *= 0.25 # only get quarter of current reward
@@ -247,6 +247,7 @@ class HarvestAgent(Agent):
         else: 
             # print('defaulting to other ')
             if char == b"A":
+                self.agent_perf['num_collected'] += 1
                 self.reward_this_turn += 1
                 return b" "
             else:
@@ -306,7 +307,7 @@ class CleanupAgent(Agent):
         # """Defines how an agent interacts with the char it is standing on"""
         if self.using_bayes: 
             if char == b"A":
-                self.agent_perf['num_consumed'] += 1
+                self.agent_perf['num_collected'] += 1
 
                 # get amount of time waited 
                 if self.curr_restraint > 0: 
@@ -330,6 +331,7 @@ class CleanupAgent(Agent):
         else: 
             # print(f'defaulting to other {self.reward_this_turn} with char {char}')
             if char == b"A":
+                self.agent_perf['num_collected'] += 1
                 self.reward_this_turn += 1
                 print('are we every getting a reward?')
                 return b" "
