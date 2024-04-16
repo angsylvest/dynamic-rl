@@ -2,12 +2,12 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-show_avg = False 
-show_diff = False 
-show_stdev = False
+show_avg = True 
+show_diff = True 
+show_stdev = True
 
 # Directory containing the folders with CSV files
-base_dir = '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/harvest-baseline-results'
+base_dir = '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/clean-baseline-results'
 
 if show_avg: 
     # Initialize data dictionary to store averaged values

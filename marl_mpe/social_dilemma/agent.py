@@ -57,7 +57,7 @@ class Agent(object):
         self.gifting = globals.gifting
         self.accrued_debt = 0
 
-        self.agent_perf = {'num_collected': 0, 'time_waited': 0}
+        self.agent_perf = {'num_collected': 0, 'time_waited': 0, 'num_cleaned': 0}
 
         assert self.gifting != self.bayes # ensure that they are not being used together
     
@@ -221,22 +221,26 @@ class HarvestAgent(Agent):
         if self.using_bayes: 
             if char == b"A":
                 self.agent_perf['num_collected'] += 1
+                self.reward_this_turn += self.consume_reward
+                return b" "
 
-                if self.curr_restraint > 0: 
-                    self.consume_reward *= 0.25 # only get quarter of current reward
-                    self.reward_this_turn += self.consume_reward # 0.5 # less gain if acting against restraint
-                    # print(f'updating reward {self.reward_this_turn} is self.curr_restraint is greater than or equal to 0 {self.curr_restraint} for {self.reward_this_turn}')
-                    return b""
-                else: 
-                    self.consume_reward = 1
-                    self.reward_this_turn += self.consume_reward
-                    # print(f'updating reward {self.reward_this_turn} is self.curr_restraint is less than 0 {self.curr_restraint} for {self.reward_this_turn}')
-                    # self.bayes.advance(self, self.curr_restraint, self.reward_this_turn)
+                # if self.curr_restraint > 0: 
+                #     self.consume_reward *= 0.25 # only get quarter of current reward
+                #     self.reward_this_turn += self.consume_reward # 0.5 # less gain if acting against restraint
+                #     # print(f'updating reward {self.reward_this_turn} is self.curr_restraint is greater than or equal to 0 {self.curr_restraint} for {self.reward_this_turn}')
+                #     return b""
+                # else: 
+                #     self.consume_reward = 1
+                #     self.reward_this_turn += self.consume_reward
+                #     # print(f'updating reward {self.reward_this_turn} is self.curr_restraint is less than 0 {self.curr_restraint} for {self.reward_this_turn}')
+                #     # self.bayes.advance(self, self.curr_restraint, self.reward_this_turn)
 
-                    self.curr_restraint = self.bayes.sample_action()
-                    return b" "
+                #     # self.curr_restraint = self.bayes.sample_action()
+                #     return b" "
             else: 
                 # no item to consume 
+                self.agent_perf['time_waited'] += 1
+
                 if self.curr_restraint > 0 and self.using_bayes: 
                     if self.consume_reward < 1: 
                         self.consume_reward *= 1.25 # some return back 
@@ -251,6 +255,7 @@ class HarvestAgent(Agent):
                 self.reward_this_turn += 1
                 return b" "
             else:
+                self.agent_perf['time_waited'] += 1
                 return char
 
 
@@ -281,16 +286,18 @@ class CleanupAgent(Agent):
             self.reward_this_turn -= 1
             print(f'fire beaming reward this turn: {self.reward_this_turn}')
 
-        if char == b"C" and self.bayes: 
+        if char == b"C":
+            self.agent_perf['num_cleaned'] += 1 
 
-            # if cleaning will get temporary reward (from someone else)
-            if self.consume_reward > 0: 
-                self.reward_this_turn += 0.1
-                self.accrued_debt += 0.1
-
-                # self.consume_reward -= 0.1 # hopefully will induce heterogeneity
-                
-            # self.curr_restraint = 0
+            if self.bayes: 
+                self.curr_restraint -= 1
+                # if cleaning will get temporary reward (from someone else)
+                # if self.consume_reward > 0: 
+                    # self.reward_this_turn += 0.1
+                    # self.accrued_debt += 1
+                    # self.consume_reward -= 0.1 # hopefully will induce heterogeneity
+                    
+                # self.curr_restraint = 0
 
 
     def get_done(self):
@@ -308,21 +315,23 @@ class CleanupAgent(Agent):
         if self.using_bayes: 
             if char == b"A":
                 self.agent_perf['num_collected'] += 1
+                self.reward_this_turn += self.consume_reward
+                return b""
 
-                # get amount of time waited 
-                if self.curr_restraint > 0: 
-                    self.consume_reward *= 0.9
-                    self.reward_this_turn += self.consume_reward # 0.5 # less gain if acting against restraint
-                    # print(f'updating reward is self.curr_restraint is greater than or equal to 0 {self.curr_restraint} for {self.reward_this_turn}')
-                    return b""
-                else: 
-                    self.consume_reward = 1
-                    self.reward_this_turn += self.consume_reward
-                    # print(f'updating reward is self.curr_restraint is less than 0 {self.curr_restraint} for {self.reward_this_turn}')
-                    # self.bayes.advance(self, self.curr_restraint, self.reward_this_turn)
+                # # get amount of time waited 
+                # if self.curr_restraint > 0: 
+                #     self.consume_reward *= 0.9
+                #     self.reward_this_turn += self.consume_reward # 0.5 # less gain if acting against restraint
+                #     # print(f'updating reward is self.curr_restraint is greater than or equal to 0 {self.curr_restraint} for {self.reward_this_turn}')
+                #     return b""
+                # else: 
+                #     self.consume_reward = 1
+                #     self.reward_this_turn += self.consume_reward
+                #     # print(f'updating reward is self.curr_restraint is less than 0 {self.curr_restraint} for {self.reward_this_turn}')
+                #     # self.bayes.advance(self, self.curr_restraint, self.reward_this_turn)
 
-                    self.curr_restraint = self.bayes.sample_action()
-                    return b" "
+                #     self.curr_restraint = self.bayes.sample_action()
+                #     return b" "
 
             else:
                 self.agent_perf['time_waited'] += 1
@@ -333,9 +342,9 @@ class CleanupAgent(Agent):
             if char == b"A":
                 self.agent_perf['num_collected'] += 1
                 self.reward_this_turn += 1
-                print('are we every getting a reward?')
                 return b" "
             else:
+                self.agent_perf['time_waited'] += 1
                 return char
 
 

@@ -8,6 +8,7 @@ from gym.spaces import Box, Dict
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.env import MultiAgentEnv
 import statistics
+import random 
 
 import globals as globals 
 
@@ -188,8 +189,8 @@ class MapEnv(MultiAgentEnv):
                 ,
                 "other_agents_rewards": Box(
                     low=0,
-                    high=1,
-                    shape=(self.num_agents - 1,),
+                    high=100,
+                    shape=(1,),
                     dtype=np.uint8,
                 )
             }
@@ -284,8 +285,14 @@ class MapEnv(MultiAgentEnv):
 
         for agent in self.agents.values():
             pos = agent.pos
-            new_char = agent.consume(self.world_map[pos[0], pos[1]])
-            self.single_update_map(pos[0], pos[1], new_char)
+            restraint = 0 
+
+            if agent.curr_restraint != 0: 
+                restraint = 1/agent.curr_restraint # prob of dropping
+            selected_item = random.choices([0, 1], [restraint, 1 - restraint])
+            if (selected_item != 0 and self.bayes) or (not self.bayes): 
+                new_char = agent.consume(self.world_map[pos[0], pos[1]])
+                self.single_update_map(pos[0], pos[1], new_char)
 
         # execute custom moves like firing
         self.update_custom_moves(agent_actions)
@@ -350,7 +357,7 @@ class MapEnv(MultiAgentEnv):
                 agent_max.curr_restraint = agent_max.bayes.sample_action()
                 agent_max.bayes.advance(agent_max.curr_restraint, 1)
 
-                agent_max.reward_this_turn -= total_deficit
+                # agent_max.reward_this_turn -= total_deficit
 
             self.rewards_for_agents = {}
             for agent_id, reward in rewards_original.items():
@@ -407,10 +414,15 @@ class MapEnv(MultiAgentEnv):
 
         i_dict = 0 
 
+
         for agent in self.agents.values():
             reward_key = f'agent-{i_dict}'
             agent.full_map = map_with_agents
             rgb_arr = self.color_view(agent)
+
+            # print(f'collections: {collections[agent.agent_id]}')
+
+
             # concatenate on the prev_actions to the observations
             if self.return_agent_actions:
                 prev_actions = np.array(
@@ -425,7 +437,7 @@ class MapEnv(MultiAgentEnv):
                     "visible_agents": visible_agents,
                     "prev_visible_agents": agent.prev_visible_agents,
                     "bayes_counter": np.array([agent.curr_restraint]),
-                    "other_agents_rewards": np.array(self.rewards_for_agents[agent.agent_id]),
+                    "other_agents_rewards": np.array([collections[agent.agent_id]]),
                 }
                     agent.prev_visible_agents = visible_agents
 
@@ -440,7 +452,7 @@ class MapEnv(MultiAgentEnv):
                     agent.prev_visible_agents = visible_agents
             else:
                 if self.bayes: 
-                    observations[agent.agent_id] = {"curr_obs": rgb_arr, "bayes_counter": np.array([agent.curr_restraint] ), "other_agents_rewards": np.array(self.rewards_for_agents[agent.agent_id])}
+                    observations[agent.agent_id] = {"curr_obs": rgb_arr, "bayes_counter": np.array([agent.curr_restraint] ), "other_agents_rewards": np.array([collections[agent.agent_id]])}
                 else: 
                     observations[agent.agent_id] = {"curr_obs": rgb_arr}
 
@@ -514,7 +526,7 @@ class MapEnv(MultiAgentEnv):
                         "visible_agents": visible_agents,
                         "prev_visible_agents": visible_agents,
                         "bayes_counter": np.array([agent.curr_restraint]),
-                        "other_agents_rewards": np.array(self.rewards_for_agents[agent.agent_id])
+                        "other_agents_rewards": np.array([agent.agent_perf['num_collected']]) # np.array([self.rewards_for_agents[agent.agent_id]])
 
                     }
 
