@@ -897,6 +897,7 @@ class MapEnv(MultiAgentEnv):
             if "MOVE" not in action and "STAY" not in action and "TURN" not in action:
                 agent = self.agents[agent_id]
                 updates = self.custom_action(agent, action)
+                # print(f'doing custom action: {action} for agent {agent} for updates {updates}')
                 if len(updates) > 0:
                     self.update_map(updates)
 
@@ -1008,6 +1009,7 @@ class MapEnv(MultiAgentEnv):
                         if self.world_map[next_cell[0], next_cell[1]] == cell_types[c]:
                             updates.append((next_cell[0], next_cell[1], update_char[c]))
                             # print(f'updating the cell to update_char {updates}')
+                            
                             break
 
                     # agents absorb beams
@@ -1020,16 +1022,19 @@ class MapEnv(MultiAgentEnv):
 
 
                         self.agents[agent_id].hit(fire_char, split_cost=0)
+                        # print('agent is obsorbing beam')
                         break
 
                     # check if the cell blocks beams. For example, waste blocks beams.
                     if self.world_map[next_cell[0], next_cell[1]] in blocking_cells:
+                        # print('waste is blocking beam')
                         break
 
                     # increment the beam position
                     next_cell += firing_direction
 
                 else:
+                    # print(f'not in bounds or will git apple.. ')
                     break
 
         self.beam_pos += firing_points

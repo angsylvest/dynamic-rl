@@ -286,18 +286,19 @@ class CleanupAgent(Agent):
             self.reward_this_turn -= 1
             print(f'fire beaming reward this turn: {self.reward_this_turn}')
 
-        if char == b"C":
-            self.agent_perf['num_cleaned'] += 1 
+        # if char == b"C":
+        #     self.agent_perf['num_cleaned'] += 1 
+        #     # print(f'cleaning up the env')
 
-            if self.bayes: 
-                self.curr_restraint -= 1
-                # if cleaning will get temporary reward (from someone else)
-                # if self.consume_reward > 0: 
-                    # self.reward_this_turn += 0.1
-                    # self.accrued_debt += 1
-                    # self.consume_reward -= 0.1 # hopefully will induce heterogeneity
+        #     if self.bayes: 
+        #         self.curr_restraint -= 1
+        #         # if cleaning will get temporary reward (from someone else)
+        #         # if self.consume_reward > 0: 
+        #             # self.reward_this_turn += 0.1
+        #             # self.accrued_debt += 1
+        #             # self.consume_reward -= 0.1 # hopefully will induce heterogeneity
                     
-                # self.curr_restraint = 0
+        #         # self.curr_restraint = 0
 
 
     def get_done(self):
@@ -316,6 +317,7 @@ class CleanupAgent(Agent):
             if char == b"A":
                 self.agent_perf['num_collected'] += 1
                 self.reward_this_turn += self.consume_reward
+                print(f'consuming an apple')
                 return b""
 
                 # # get amount of time waited 
@@ -342,6 +344,7 @@ class CleanupAgent(Agent):
             if char == b"A":
                 self.agent_perf['num_collected'] += 1
                 self.reward_this_turn += 1
+                print(f'yum yum apples')
                 return b" "
             else:
                 self.agent_perf['time_waited'] += 1

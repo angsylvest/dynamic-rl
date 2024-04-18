@@ -2,9 +2,9 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-show_avg = False 
-show_diff = False 
-show_stdev = False
+show_avg = True 
+show_diff = True 
+show_stdev = True
 
 # Directory containing the folders with CSV files
 base_dir = '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/harvest-baseline-results'
@@ -40,6 +40,7 @@ if show_avg:
         plt.plot(df['Iteration'], df['Average Collected'], label=folder)
 
     plt.xlabel('Iteration')
+    plt.xlim(left=0, right=750)
     plt.ylabel('Average Number of Collected Items')
     plt.title('Average Number of Collected Items for Harvest Env')
     plt.legend()
@@ -84,6 +85,7 @@ if show_diff:
     plt.title('Difference Between Max and Min Collected Items by Agent Over Iterations')
     plt.legend()
     plt.grid(True)
+    plt.xlim(left=0, right=750)
     plt.show()
 
 
@@ -121,6 +123,7 @@ if show_stdev:
     plt.title('Total Resources Collected over Iterations for Harvest Env')
     plt.legend()
     plt.grid(True)
+    plt.xlim(left=0, right=750)
     plt.show()
 
 
@@ -163,4 +166,5 @@ plt.ylabel('Distance from Mean for Max Collected Agent')
 plt.title('Distance from Mean for Agent with Max Collected over Iterations for Harvest Env')
 plt.legend()
 plt.grid(True)
+plt.xlim(left=0, right=750)
 plt.show()

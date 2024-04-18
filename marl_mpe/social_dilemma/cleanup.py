@@ -110,7 +110,6 @@ class CleanupEnv(MapEnv):
     def custom_action(self, agent, action):
         """Allows agents to take actions that are not move or turn"""
         updates = []
-        # print(f'actions in custom_action: {action} for agent {agent}')
         if action == "FIRE" and self.gifting:
             agent.fire_beam(b"F")
             updates = self.update_map_fire(
@@ -123,6 +122,7 @@ class CleanupEnv(MapEnv):
 
         elif action == "CLEAN":
             # print('we cleaning')
+            agent.agent_perf['num_cleaned'] += 1
             agent.fire_beam(b"C")
             updates = self.update_map_fire(
                 agent.pos.tolist(),
@@ -133,7 +133,7 @@ class CleanupEnv(MapEnv):
                 update_char=[b"R"],
                 blocking_cells=[b"H"],
             )
-
+        # print(f'actions in custom_action: {action} for agent {agent} with updates {updates}')
         return updates
 
     def custom_map_update(self):
@@ -175,6 +175,7 @@ class CleanupEnv(MapEnv):
                 r += 1
                 if rand_num < self.current_apple_spawn_prob:
                     spawn_points.append((row, col, b"A"))
+                    print('adding apple spawn point')
 
         # spawn one waste point, only one can spawn per step
         if not np.isclose(self.current_waste_spawn_prob, 0):
@@ -187,6 +188,7 @@ class CleanupEnv(MapEnv):
                     r += 1
                     if rand_num < self.current_waste_spawn_prob:
                         spawn_points.append((row, col, b"H"))
+                        print('spawning waste')
                         break
 
         return spawn_points
@@ -211,6 +213,9 @@ class CleanupEnv(MapEnv):
                 ) * appleRespawnProbability
                 self.current_apple_spawn_prob = spawn_prob
                 # print(f'updated respawn to {self.current_apple_spawn_prob}')
+
+        # print(f'apple spawn prob: {self.current_apple_spawn_prob} and waste spawn: {self.current_waste_spawn_prob}')
+        # print(f'waste density: {waste_density} vs thresholdDepletion {thresholdDepletion}')
 
     def compute_permitted_area(self):
         """How many cells can we spawn waste on?"""

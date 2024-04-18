@@ -44,6 +44,7 @@ if show_avg:
     plt.title('Average Number of Collected Items for Harvest Env')
     plt.legend()
     plt.grid(True)
+    plt.xlim(left=0, right=750)
     plt.show()
 
 
@@ -84,6 +85,7 @@ if show_diff:
     plt.title('Difference Between Max and Min Collected Items by Agent Over Iterations')
     plt.legend()
     plt.grid(True)
+    plt.xlim(left=0, right=750)
     plt.show()
 
 
@@ -121,6 +123,7 @@ if show_stdev:
     plt.title('Total Resources Collected over Iterations for Harvest Env')
     plt.legend()
     plt.grid(True)
+    plt.xlim(left=0, right=750)
     plt.show()
 
 
@@ -163,4 +166,5 @@ plt.ylabel('Distance from Mean for Max Collected Agent')
 plt.title('Distance from Mean for Agent with Max Collected over Iterations for Harvest Env')
 plt.legend()
 plt.grid(True)
+plt.xlim(left=0, right=750)
 plt.show()

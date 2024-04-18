@@ -614,6 +614,7 @@ class PPO:
 		self.logger['batch_lens'] = batch_lens
 		self.logger['num_collected'] = col_stats
 
+		print(f'batch_acts: {batch_acts}')
 		return batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens
 
 	def compute_rtgs(self, batch_rews):
