@@ -3,6 +3,7 @@
 # 'P' means "player" spawn point
 # 'A' means apple spawn point
 # ' ' is empty space
+# 'B' is an apple in cleanup? 
 
 HARVEST_MAP = [
     "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@",

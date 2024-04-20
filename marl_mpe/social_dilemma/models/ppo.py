@@ -15,6 +15,7 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.distributions import MultivariateNormal
+import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
 import globals as globals
@@ -187,6 +188,7 @@ class PPO:
 		# Initialize the Matplotlib plot
 		if globals.interactive_mode: 
 			plt.ion()  # Turn on interactive mode
+			
 		# Create a figure with two subplots
 		fig, (ax_total, ax_agents) = plt.subplots(2, 1)
 		line_total, = ax_total.plot([], [], label='Total Average Episodic Return')
@@ -691,8 +693,10 @@ class PPO:
 		# Query the actor network for a mean action
 		# mean = self.actor(obs)
 		# print(f'obs shape: {obs.shape}')
-		mean = self.actors[index](obs)
-		dist = torch.distributions.Categorical(logits=mean) # sampling from categorical since actions are discretized
+		output_probs = self.actors[index](obs)
+		action = torch.multinomial(output_probs, num_samples=1).item()
+		log_prob = F.log_softmax(output_probs, dim=1)
+		# dist = torch.distributions.Categorical(logits=mean) # sampling from categorical since actions are discretized
 
 		# Create a distribution with the mean action and std from the covariance matrix above.
 		# For more information on how this distribution works, check out Andrew Ng's lecture on it:
@@ -700,18 +704,19 @@ class PPO:
 		# dist = MultivariateNormal(mean, self.cov_mat)
 
 		# Sample an action from the distribution
-		action = dist.sample()
+		# action = dist.sample()
 
 		# Calculate the log probability for that action
-		log_prob = dist.log_prob(action)
+		# log_prob = dist.log_prob(action)
 
 		# If we're testing, just return the deterministic action. Sampling should only be for training
 		# as our "exploration" factor.
-		if self.deterministic:
-			return mean.detach().numpy(), 1
+		# if self.deterministic:
+			# return mean.detach().numpy(), 1
 
 		# Return the sampled action and the log probability of that action in our distribution
-		return action.detach().numpy(), log_prob.detach()
+		# return action.detach().numpy(), log_prob.detach()
+		return action, log_prob
 
 	def evaluate(self, batch_obs, batch_acts, batch_rtgs, agent_id):
 		"""
