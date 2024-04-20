@@ -286,7 +286,8 @@ class CleanupAgent(Agent):
             self.reward_this_turn -= 1
             print(f'fire beaming reward this turn: {self.reward_this_turn}')
 
-        # if char == b"C":
+        if char == b"C":
+            self.reward_this_turn += 0.01
         #     self.agent_perf['num_cleaned'] += 1 
         #     # print(f'cleaning up the env')
 
