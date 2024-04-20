@@ -48,4 +48,4 @@ class FeedForwardNN(nn.Module):
 		activation2 = F.relu(self.layer2(activation1))
 		output = self.layer3(activation2)
 
-		return F.softmax(output, dim=self.out_dim) # because using categorical rep
+		return F.softmax(output, dim=0) # because using categorical rep
