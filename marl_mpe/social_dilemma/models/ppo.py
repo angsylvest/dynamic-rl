@@ -716,7 +716,7 @@ class PPO:
 
 		# Return the sampled action and the log probability of that action in our distribution
 		# return action.detach().numpy(), log_prob.detach()
-		return action, log_prob
+		return action.numpy(), log_prob
 
 	def evaluate(self, batch_obs, batch_acts, batch_rtgs, agent_id):
 		"""
