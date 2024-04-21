@@ -108,6 +108,8 @@ class Agent(object):
                 self.accrued_debt = 0 
                 self.consume_reward = 1
 
+        self.agent_perf = {'num_collected': 0, 'time_waited': 0, 'num_cleaned': 0}
+
         return reward
 
     def set_pos(self, new_pos):
@@ -337,7 +339,7 @@ class CleanupAgent(Agent):
                 #     return b" "
 
             else:
-                self.reward_this_turn -= 0.02
+                self.reward_this_turn -= 0.5
                 self.agent_perf['time_waited'] += 1
                 return char
 
@@ -349,7 +351,7 @@ class CleanupAgent(Agent):
                 print(f'yum yum apples')
                 return b" "
             else:
-                self.reward_this_turn -= 0.02
+                self.reward_this_turn -= 0.5
                 self.agent_perf['time_waited'] += 1
                 return char
 
