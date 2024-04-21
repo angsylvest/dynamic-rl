@@ -694,11 +694,8 @@ class PPO:
 		# mean = self.actor(obs)
 		# print(f'obs shape: {obs.shape}')
 		output_probs = self.actors[index](obs)
-		# print(f'output probs: {output_probs}')
 		action = torch.multinomial(output_probs, num_samples=1).item()
-		# print(f'sampled action: {action}')
 		log_prob = torch.log(output_probs[action])
-		# print(f'outputted log probs: {log_prob}')
 		# dist = torch.distributions.Categorical(logits=mean) # sampling from categorical since actions are discretized
 
 		# Create a distribution with the mean action and std from the covariance matrix above.

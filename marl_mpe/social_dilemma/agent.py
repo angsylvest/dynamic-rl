@@ -337,6 +337,7 @@ class CleanupAgent(Agent):
                 #     return b" "
 
             else:
+                self.reward_this_turn -= 0.02
                 self.agent_perf['time_waited'] += 1
                 return char
 
@@ -348,6 +349,7 @@ class CleanupAgent(Agent):
                 print(f'yum yum apples')
                 return b" "
             else:
+                self.reward_this_turn -= 0.02
                 self.agent_perf['time_waited'] += 1
                 return char
 
