@@ -294,6 +294,11 @@ class CleanupAgent(Agent):
                 self.reward_this_turn += 0.5
                 # print('added cleaning reward')
                 self.cleaned = True 
+                if self.bayes: 
+                    self.curr_restraint = 0 
+            
+            elif updates == [] and self.bayes:
+                self.curr_restraint -= 1
         #     self.agent_perf['num_cleaned'] += 1 
         #     # print(f'cleaning up the env')
 
