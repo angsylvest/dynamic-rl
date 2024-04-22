@@ -284,14 +284,15 @@ class CleanupAgent(Agent):
         """Maps action_number to a desired action in the map"""
         return CLEANUP_ACTIONS[action_number]
 
-    def fire_beam(self, char):
+    def fire_beam(self, char, updates = []):
         if char == b"F":
             self.reward_this_turn -= 1
             print(f'fire beaming reward this turn: {self.reward_this_turn}')
 
         if char == b"C":
-            self.reward_this_turn += 0.01
-            self.cleaned = True 
+            if updates != []:
+                self.reward_this_turn += 0.01
+                self.cleaned = True 
         #     self.agent_perf['num_cleaned'] += 1 
         #     # print(f'cleaning up the env')
 

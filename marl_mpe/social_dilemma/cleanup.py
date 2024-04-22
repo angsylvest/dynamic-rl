@@ -123,7 +123,7 @@ class CleanupEnv(MapEnv):
         elif action == "CLEAN":
             # print('we cleaning')
             agent.agent_perf['num_cleaned'] += 1
-            agent.fire_beam(b"C")
+            # agent.fire_beam(b"C")
             updates = self.update_map_fire(
                 agent.pos.tolist(),
                 agent.get_orientation(),
@@ -133,6 +133,8 @@ class CleanupEnv(MapEnv):
                 update_char=[b"R"],
                 blocking_cells=[b"H"],
             )
+            agent.fire_beam(b"C", updates)
+            
         # print(f'actions in custom_action: {action} for agent {agent} with updates {updates}')
         return updates
 
