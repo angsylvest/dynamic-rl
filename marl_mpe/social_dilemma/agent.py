@@ -275,6 +275,7 @@ class CleanupAgent(Agent):
         # remember what you've stepped on
         self.update_agent_pos(start_pos)
         self.update_agent_rot(start_orientation)
+        self.cleaned = False 
 
 
     # Ugh, this is gross, this leads to the actions basically being
@@ -290,6 +291,7 @@ class CleanupAgent(Agent):
 
         if char == b"C":
             self.reward_this_turn += 0.01
+            self.cleaned = True 
         #     self.agent_perf['num_cleaned'] += 1 
         #     # print(f'cleaning up the env')
 
@@ -321,6 +323,7 @@ class CleanupAgent(Agent):
                 self.agent_perf['num_collected'] += 1
                 self.reward_this_turn += self.consume_reward
                 print(f'consuming an apple')
+                self.cleaned = False
                 return b""
 
                 # # get amount of time waited 
@@ -339,8 +342,12 @@ class CleanupAgent(Agent):
                 #     return b" "
 
             else:
+                # want to reward for how close to nearest apple
+                if not self.cleaned: 
+                    self.reward_this_turn -= 0.5
                 self.reward_this_turn -= 0.5
                 self.agent_perf['time_waited'] += 1
+                self.cleaned = False 
                 return char
 
         else: 
@@ -349,10 +356,14 @@ class CleanupAgent(Agent):
                 self.agent_perf['num_collected'] += 1
                 self.reward_this_turn += 1
                 print(f'yum yum apples')
+                self.cleaned = False
                 return b" "
             else:
-                self.reward_this_turn -= 0.5
+                # want to reward for how close to nearest apple
+                if not self.cleaned: 
+                    self.reward_this_turn -= 0.5
                 self.agent_perf['time_waited'] += 1
+                self.cleaned = False
                 return char
 
 
