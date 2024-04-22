@@ -135,7 +135,8 @@ class CleanupEnv(MapEnv):
             )
             agent.fire_beam(b"C", updates)
             
-        # print(f'actions in custom_action: {action} for agent {agent} with updates {updates}')
+        if updates != []:
+            print(f'actions in custom_action: {action} for agent {agent} with updates {updates}')
         return updates
 
     def custom_map_update(self):
