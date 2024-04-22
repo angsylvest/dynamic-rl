@@ -419,6 +419,7 @@ class PPO:
 			for ep_t in range(self.max_timesteps_per_episode):
 				# print(f'ep time so far: {ep_t} for {self.max_timesteps_per_episode}')
 				actions = []
+				act = {}
 				log_probs = []
 
 				# If render is specified, render the environment
@@ -426,6 +427,14 @@ class PPO:
 					self.env.render()
 
 				t += 1 # Increment timesteps ran this batch so far
+
+				# update ---
+	
+				# 1. get everyone's observations 
+	
+				# 2. get everyone's actions 
+	
+				# 3. call step, and each agent moves based on behavior 
 
 				# for each agent, append current obs in respective dict 
 				# TODO: MAKE LESS UGLY/CLEAN
@@ -564,8 +573,8 @@ class PPO:
 						agent_id = f"agent-{i}"
 						act[agent_id] = actions[i]
 
-					actions = act
-					obs, rews, dones, infos = self.env.step(actions)
+					# actions = act
+					obs, rews, dones, infos = self.env.step(act)
 					print(f'output rews: {rews}')
 
 				else:
@@ -578,7 +587,7 @@ class PPO:
 
 					if self.env_type == 'social-dilemma': 
 						ep_rews[i].append(rews[agent_id])
-						batch_acts[i].append(actions[agent_id])
+						batch_acts[i].append(act[agent_id])
 						batch_log_probs[i].append(log_probs[i].item())
 
 					else: 
