@@ -291,7 +291,7 @@ class CleanupAgent(Agent):
 
         if char == b"C":
             if updates != []:
-                self.reward_this_turn += 0.01
+                self.reward_this_turn += 0.05
                 self.cleaned = True 
         #     self.agent_perf['num_cleaned'] += 1 
         #     # print(f'cleaning up the env')
@@ -344,9 +344,8 @@ class CleanupAgent(Agent):
 
             else:
                 # want to reward for how close to nearest apple
-                if not self.cleaned: 
-                    self.reward_this_turn -= 0.5
-                self.reward_this_turn -= 0.5
+                # if not self.cleaned: 
+                self.reward_this_turn -= 0.02
                 self.agent_perf['time_waited'] += 1
                 self.cleaned = False 
                 return char
@@ -361,8 +360,8 @@ class CleanupAgent(Agent):
                 return b" "
             else:
                 # want to reward for how close to nearest apple
-                if not self.cleaned: 
-                    self.reward_this_turn -= 0.5
+                # if not self.cleaned: 
+                self.reward_this_turn -= 0.2
                 self.agent_perf['time_waited'] += 1
                 self.cleaned = False
                 return char
