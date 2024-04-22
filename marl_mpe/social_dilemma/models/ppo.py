@@ -566,6 +566,7 @@ class PPO:
 
 					actions = act
 					obs, rews, dones, infos = self.env.step(actions)
+					print(f'output rews: {rews}')
 
 				else:
 					obs, rews, dones, _, _ = self.env.step(actions)
