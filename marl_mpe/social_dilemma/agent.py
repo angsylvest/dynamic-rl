@@ -307,10 +307,17 @@ class CleanupAgent(Agent):
         
         if apple_dist != np.inf: 
             self.reward_this_turn -= 0.1 * apple_dist  # Penalize based on distance from apple
-        if clean_dist != np.inf: 
-            self.reward_this_turn -= 0.1 * clean_dist  # Penalize based on distance from clean-up site
-
+        else: 
+            self.reward_this_turn -= 2.0
+        if clean_dist != np.inf:
+            if apple_dist == np.inf: 
+                self.reward_this_turn -= 0.05 * clean_dist  # Penalize based on distance from clean-up site
+            else: 
+                self.reward_this_turn -= 2.5
+        elif clean_dist == np.inf:
+            self.reward_this_turn -= 0.1
         
+
         if self.using_bayes: 
             if char == b"A":
                 self.agent_perf['num_collected'] += 1
