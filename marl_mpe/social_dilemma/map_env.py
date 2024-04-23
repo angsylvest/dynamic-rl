@@ -291,7 +291,7 @@ class MapEnv(MultiAgentEnv):
                 restraint = 1/agent.curr_restraint # prob of dropping
             selected_item = random.choices([0, 1], [restraint, 1 - restraint])
             if (selected_item != 0 and self.bayes) or (not self.bayes): 
-                new_char = agent.consume(self.world_map[pos[0], pos[1]])
+                new_char = agent.consume(self.world_map[pos[0], pos[1]], self.world_map)
                 self.single_update_map(pos[0], pos[1], new_char)
 
         # execute custom moves like firing

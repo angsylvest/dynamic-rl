@@ -226,19 +226,6 @@ class HarvestAgent(Agent):
                 self.reward_this_turn += self.consume_reward
                 return b" "
 
-                # if self.curr_restraint > 0: 
-                #     self.consume_reward *= 0.25 # only get quarter of current reward
-                #     self.reward_this_turn += self.consume_reward # 0.5 # less gain if acting against restraint
-                #     # print(f'updating reward {self.reward_this_turn} is self.curr_restraint is greater than or equal to 0 {self.curr_restraint} for {self.reward_this_turn}')
-                #     return b""
-                # else: 
-                #     self.consume_reward = 1
-                #     self.reward_this_turn += self.consume_reward
-                #     # print(f'updating reward {self.reward_this_turn} is self.curr_restraint is less than 0 {self.curr_restraint} for {self.reward_this_turn}')
-                #     # self.bayes.advance(self, self.curr_restraint, self.reward_this_turn)
-
-                #     # self.curr_restraint = self.bayes.sample_action()
-                #     return b" "
             else: 
                 # no item to consume 
                 self.agent_perf['time_waited'] += 1
@@ -299,18 +286,6 @@ class CleanupAgent(Agent):
             
             elif updates == [] and self.bayes:
                 self.curr_restraint -= 1
-        #     self.agent_perf['num_cleaned'] += 1 
-        #     # print(f'cleaning up the env')
-
-        #     if self.bayes: 
-        #         self.curr_restraint -= 1
-        #         # if cleaning will get temporary reward (from someone else)
-        #         # if self.consume_reward > 0: 
-        #             # self.reward_this_turn += 0.1
-        #             # self.accrued_debt += 1
-        #             # self.consume_reward -= 0.1 # hopefully will induce heterogeneity
-                    
-        #         # self.curr_restraint = 0
 
 
     def get_done(self):
@@ -322,9 +297,10 @@ class CleanupAgent(Agent):
         elif char == b"F" and self.gifting: 
             self.reward_this_turn += split_cost
 
-    def consume(self, char):
+    def consume(self, char, map = ""):
         """Defines how an agent interacts with the char it is standing on"""
         # """Defines how an agent interacts with the char it is standing on"""
+        print(f'map input: {map}')
         if self.using_bayes: 
             if char == b"A":
                 self.agent_perf['num_collected'] += 1
@@ -332,21 +308,6 @@ class CleanupAgent(Agent):
                 print(f'consuming an apple')
                 self.cleaned = False
                 return b""
-
-                # # get amount of time waited 
-                # if self.curr_restraint > 0: 
-                #     self.consume_reward *= 0.9
-                #     self.reward_this_turn += self.consume_reward # 0.5 # less gain if acting against restraint
-                #     # print(f'updating reward is self.curr_restraint is greater than or equal to 0 {self.curr_restraint} for {self.reward_this_turn}')
-                #     return b""
-                # else: 
-                #     self.consume_reward = 1
-                #     self.reward_this_turn += self.consume_reward
-                #     # print(f'updating reward is self.curr_restraint is less than 0 {self.curr_restraint} for {self.reward_this_turn}')
-                #     # self.bayes.advance(self, self.curr_restraint, self.reward_this_turn)
-
-                #     self.curr_restraint = self.bayes.sample_action()
-                #     return b" "
 
             else:
                 # want to reward for how close to nearest apple
@@ -371,6 +332,44 @@ class CleanupAgent(Agent):
                 self.agent_perf['time_waited'] += 1
                 self.cleaned = False
                 return char
+            
+    def find_closest_distance(self, agent_pos, map):
+        agent_row, agent_col = agent_pos
+
+        map_data = self.color_view(agent_pos) 
+        map_rows, map_cols = map_data.shape
+
+        # Initialize distances to infinity for comparison
+        closest_apple_distance = np.inf
+        closest_cleanup_distance = np.inf
+
+        # Iterate through the map to find the closest apple and clean-up area
+        for row in range(map_rows):
+            for col in range(map_cols):
+                if map_data[row, col] == b"A":
+                    apple_distance = abs(row - agent_row) + abs(col - agent_col)
+                    closest_apple_distance = min(closest_apple_distance, apple_distance)
+                elif map_data[row, col] == b"H":
+                    cleanup_distance = abs(row - agent_row) + abs(col - agent_col)
+                    closest_cleanup_distance = min(closest_cleanup_distance, cleanup_distance)
+
+        return closest_apple_distance, closest_cleanup_distance
+
+    def color_view(self, agent):
+        row, col = agent
+        view_slice = self.world_map_color[
+            row + self.map_padding - self.view_len : row + self.map_padding + self.view_len + 1,
+            col + self.map_padding - self.view_len : col + self.map_padding + self.view_len + 1,
+        ]
+        if agent.orientation == "UP":
+            rotated_view = view_slice
+        elif agent.orientation == "LEFT":
+            rotated_view = np.rot90(view_slice)
+        elif agent.orientation == "DOWN":
+            rotated_view = np.rot90(view_slice, k=2)
+        elif agent.orientation == "RIGHT":
+            rotated_view = np.rot90(view_slice, k=1, axes=(1, 0))
+        return rotated_view
 
 
 SWITCH_ACTIONS = BASE_ACTIONS.copy()

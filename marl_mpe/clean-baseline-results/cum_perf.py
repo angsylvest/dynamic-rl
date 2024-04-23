@@ -17,6 +17,10 @@ for folder in os.listdir(base_dir):
             # Read CSV file
             df = pd.read_csv(csv_file)
 
+            # For 'joint' folder, divide Average_Reward by number of agents (5 in this case)
+            if folder == 'joint':
+                df['Average_Reward'] /= 5  # Divide by number of agents
+
             # Store performance data in data dictionary
             data[folder] = df[['Iteration', 'Average_Reward']]
 
@@ -27,7 +31,7 @@ for folder, df in data.items():
 
 plt.xlabel('Iteration')
 plt.ylabel('Average Reward')
-plt.title('Average Reward Over Iterations for Each Directory')
+plt.title('Average Reward for Clean-up Env')
 plt.legend()
 plt.grid(True)
 plt.show()
