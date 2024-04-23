@@ -277,6 +277,7 @@ class CleanupAgent(Agent):
             print(f'fire beaming reward this turn: {self.reward_this_turn}')
 
         if char == b"C":
+            
             if updates != []:
                 self.reward_this_turn += 0.5
                 # print('added cleaning reward')
@@ -300,7 +301,16 @@ class CleanupAgent(Agent):
     def consume(self, char, map = ""):
         """Defines how an agent interacts with the char it is standing on"""
         # """Defines how an agent interacts with the char it is standing on"""
-        print(f'map input: {map}')
+        # print(f'map input: {map}')
+        apple_dist, clean_dist = self.find_closest_distance(self.pos, map)
+        # print(f'apple dist: {apple_dist} and clean dist: {clean_dist}')
+        
+        if apple_dist != np.inf: 
+            self.reward_this_turn -= 0.1 * apple_dist  # Penalize based on distance from apple
+        if clean_dist != np.inf: 
+            self.reward_this_turn -= 0.1 * clean_dist  # Penalize based on distance from clean-up site
+
+        
         if self.using_bayes: 
             if char == b"A":
                 self.agent_perf['num_collected'] += 1
@@ -312,7 +322,6 @@ class CleanupAgent(Agent):
             else:
                 # want to reward for how close to nearest apple
                 # if not self.cleaned: 
-                self.reward_this_turn -= 0.02
                 self.agent_perf['time_waited'] += 1
                 self.cleaned = False 
                 return char
@@ -328,15 +337,14 @@ class CleanupAgent(Agent):
             else:
                 # want to reward for how close to nearest apple
                 # if not self.cleaned: 
-                self.reward_this_turn -= 0.2
                 self.agent_perf['time_waited'] += 1
                 self.cleaned = False
                 return char
             
-    def find_closest_distance(self, agent_pos, map):
+    def find_closest_distance(self, agent_pos, map_grid):
         agent_row, agent_col = agent_pos
 
-        map_data = self.color_view(agent_pos) 
+        map_data = self.color_view(agent_pos, map_grid) 
         map_rows, map_cols = map_data.shape
 
         # Initialize distances to infinity for comparison
@@ -355,19 +363,21 @@ class CleanupAgent(Agent):
 
         return closest_apple_distance, closest_cleanup_distance
 
-    def color_view(self, agent):
+    def color_view(self, agent, map):
         row, col = agent
-        view_slice = self.world_map_color[
-            row + self.map_padding - self.view_len : row + self.map_padding + self.view_len + 1,
-            col + self.map_padding - self.view_len : col + self.map_padding + self.view_len + 1,
+        map_padding = 7 
+
+        view_slice = map[
+            row + map_padding - self.view_len : row + map_padding + self.view_len + 1,
+            col + map_padding - self.view_len : col + map_padding + self.view_len + 1,
         ]
-        if agent.orientation == "UP":
+        if self.orientation == "UP":
             rotated_view = view_slice
-        elif agent.orientation == "LEFT":
+        elif self.orientation == "LEFT":
             rotated_view = np.rot90(view_slice)
-        elif agent.orientation == "DOWN":
+        elif self.orientation == "DOWN":
             rotated_view = np.rot90(view_slice, k=2)
-        elif agent.orientation == "RIGHT":
+        elif self.orientation == "RIGHT":
             rotated_view = np.rot90(view_slice, k=1, axes=(1, 0))
         return rotated_view
 
