@@ -8,7 +8,7 @@ show_stdev = False
 show_clean_up = True 
 
 # Directory containing the folders with CSV files
-base_dir = '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/clean-baseline-results'
+base_dir = 'Downloads/dynamic-rl/marl_mpe/clean-baseline-results'
 
 if show_avg: 
     # Initialize data dictionary to store averaged values
