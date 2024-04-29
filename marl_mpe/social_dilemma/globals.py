@@ -1,8 +1,8 @@
 bayes = True 
 social_restraint = False # will also reward to eventually accrue back 
-max_delay = 3
+max_delay = 2
 gifting = False
-environment_used = "clean-up" # "clean-up" # "harvest"
+environment_used = "harvest" # "clean-up" # "harvest"
 interactive_mode = True
 hpc = True
 collective_reward = False

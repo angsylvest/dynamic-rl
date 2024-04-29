@@ -195,6 +195,8 @@ class HarvestAgent(Agent):
         super().__init__(agent_id, start_pos, start_orientation, full_map, view_len, view_len)
         self.update_agent_pos(start_pos)
         self.update_agent_rot(start_orientation)
+
+        self.aversion_region = (0,0)
         
 
     # Ugh, this is gross, this leads to the actions basically being
@@ -217,13 +219,27 @@ class HarvestAgent(Agent):
     def get_done(self):
         return False
     
+    def is_close(self, curr_pos, aversion_region):
+        dist = np.linalg.norm(curr_pos - aversion_region) 
+        if dist <= 1.0: 
+            return True 
+        else: 
+            return False
+        
 
-    def consume(self, char):
+    def consume(self, char, map = None):
         """Defines how an agent interacts with the char it is standing on"""
         if self.using_bayes: 
             if char == b"A":
                 self.agent_perf['num_collected'] += 1
-                self.reward_this_turn += self.consume_reward
+
+                if self.is_close(self.pos, self.aversion_region) and self.bayes:
+                    self.reward_this_turn += self.consume_reward*0.5
+                else: 
+                    self.reward_this_turn += self.consume_reward
+
+                # add aversion region here 
+                self.aversion_region = self.pos
                 return b" "
 
             else: 
@@ -263,6 +279,7 @@ class CleanupAgent(Agent):
         self.update_agent_pos(start_pos)
         self.update_agent_rot(start_orientation)
         self.cleaned = False 
+        self.scarcity = False 
 
 
     # Ugh, this is gross, this leads to the actions basically being
@@ -284,6 +301,8 @@ class CleanupAgent(Agent):
                 self.cleaned = True 
                 if self.bayes: 
                     self.curr_restraint = 0 
+                    if self.scarcity:  # want to reward even more 
+                        self.reward_this_turn += 0.5
             
             elif updates == [] and self.bayes:
                 self.curr_restraint -= 1
@@ -304,10 +323,14 @@ class CleanupAgent(Agent):
         # print(f'map input: {map}')
         apple_dist, clean_dist = self.find_closest_distance(self.pos, map)
         # print(f'apple dist: {apple_dist} and clean dist: {clean_dist}')
-        
+        self.scarcity = False 
+
         if apple_dist != np.inf: 
             self.reward_this_turn -= 0.1 * apple_dist  # Penalize based on distance from apple
         else: 
+            if self.bayes: 
+                # want to encourage self-preservation in the face of scarcity 
+                self.scarcity = True 
             self.reward_this_turn -= 2.0
         if clean_dist != np.inf:
             if apple_dist == np.inf: 
