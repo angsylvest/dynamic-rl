@@ -326,7 +326,7 @@ class MapEnv(MultiAgentEnv):
                 curr_key = f'agent-{i}'
                 curr_reward = agent.compute_reward(reset = False)
                 deficit_info[curr_key] = agent.accrued_debt
-                print(f'{agent.agent_perf["num_collected"]}')
+                # print(f'{agent.agent_perf["num_collected"]}')
                 agent.curr_restraint -= 1 
                 rewards_original[curr_key] = curr_reward
                 i += 1 
