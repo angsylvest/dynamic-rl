@@ -4,6 +4,6 @@ max_delay = 2
 gifting = False
 environment_used = "harvest" # "clean-up" # "harvest"
 interactive_mode = True
-hpc = True
+hpc = False
 collective_reward = False
 return_agent_actions = True

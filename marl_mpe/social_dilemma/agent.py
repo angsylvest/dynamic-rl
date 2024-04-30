@@ -108,7 +108,7 @@ class Agent(object):
                 self.accrued_debt = 0 
                 self.consume_reward = 1
 
-        self.agent_perf = {'num_collected': 0, 'time_waited': 0, 'num_cleaned': 0}
+            self.agent_perf = {'num_collected': 0, 'time_waited': 0, 'num_cleaned': 0}
 
         return reward
 
@@ -232,9 +232,9 @@ class HarvestAgent(Agent):
         """Defines how an agent interacts with the char it is standing on"""
         if self.using_bayes: 
             if char == b"A":
-                print(f'before self.agent_perf collected: {self.agent_perf["num_collected"]}')
+                # print(f'before self.agent_perf collected: {self.agent_perf["num_collected"]}')
                 self.agent_perf['num_collected'] += 1
-                print(f'self.agent_perf collected: {self.agent_perf["num_collected"]}')
+                # print(f'self.agent_perf collected: {self.agent_perf["num_collected"]}')
 
                 if self.is_close(self.pos, self.aversion_region) and self.bayes:
                     # print(f'close, half reward .. {self.pos, self.aversion_region}')
