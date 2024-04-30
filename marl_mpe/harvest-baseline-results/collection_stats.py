@@ -8,7 +8,7 @@ show_stdev = True
 show_clean_up = True 
 
 # Directory containing the folders with CSV files
-base_dir = '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/clean-baseline-results'
+base_dir = '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/harvest-baseline-results'
 
 if show_avg: 
     # Initialize data dictionary to store averaged values
@@ -169,37 +169,3 @@ plt.legend()
 plt.grid(True)
 plt.xlim(left=0, right=750)
 plt.show()
-
-if show_clean_up:
-    # Initialize data dictionary to store average number of 'num_cleaned' for each directory
-    data = {}
-
-    # Iterate through directories
-    for folder in os.listdir(base_dir):
-        folder_path = os.path.join(base_dir, folder)
-        if os.path.isdir(folder_path):
-            csv_file = os.path.join(folder_path, 'csv_perf.csv')
-            if os.path.isfile(csv_file):
-                # Read CSV file
-                df = pd.read_csv(csv_file)
-
-                # Convert 'Custom Metrics' to dictionary
-                df['Custom Metrics'] = df['Custom Metrics'].apply(eval)
-
-                # Extract 'num_cleaned' values for each agent and calculate average
-                df['Num Cleaned Avg'] = df['Custom Metrics'].apply(lambda x: sum(agent_data['num_cleaned'] for agent_data in x.values()) / len(x))
-
-                # Store average number of 'num_cleaned' in data dictionary
-                data[folder] = df[['Iteration', 'Num Cleaned Avg']]
-
-    # Plotting the line chart for average number of 'num_cleaned' for each directory
-    plt.figure(figsize=(10, 6))
-    for folder, df in data.items():
-        plt.plot(df['Iteration'], df['Num Cleaned Avg'], label=folder)
-
-    plt.xlabel('Iteration')
-    plt.ylabel('Average Number of Cleaned Items')
-    plt.title('Average Number of Cleaned Items for Each Directory')
-    plt.legend()
-    plt.grid(True)
-    plt.show()

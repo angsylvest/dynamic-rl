@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Directory containing the folders with CSV files
-base_dir = '/Users/angelsylvester/Downloads/dynamic-rl/marl_mpe/clean-baseline-results'
+base_dir = '/home/angelsylvester/Documents/dynamic-rl/marl_mpe/clean-baseline-results'
 
 # Initialize data dictionary to store performance data for each directory
 data = {}

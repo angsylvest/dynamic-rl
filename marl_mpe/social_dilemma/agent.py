@@ -197,6 +197,7 @@ class HarvestAgent(Agent):
         self.update_agent_rot(start_orientation)
 
         self.aversion_region = (0,0)
+        self.count = 0
         
 
     # Ugh, this is gross, this leads to the actions basically being
@@ -221,7 +222,7 @@ class HarvestAgent(Agent):
     
     def is_close(self, curr_pos, aversion_region):
         dist = np.linalg.norm(curr_pos - aversion_region) 
-        if dist <= 1.0: 
+        if dist <= 3.0: 
             return True 
         else: 
             return False
@@ -231,15 +232,23 @@ class HarvestAgent(Agent):
         """Defines how an agent interacts with the char it is standing on"""
         if self.using_bayes: 
             if char == b"A":
+                print(f'before self.agent_perf collected: {self.agent_perf["num_collected"]}')
                 self.agent_perf['num_collected'] += 1
+                print(f'self.agent_perf collected: {self.agent_perf["num_collected"]}')
 
                 if self.is_close(self.pos, self.aversion_region) and self.bayes:
+                    # print(f'close, half reward .. {self.pos, self.aversion_region}')
                     self.reward_this_turn += self.consume_reward*0.5
                 else: 
                     self.reward_this_turn += self.consume_reward
 
-                # add aversion region here 
-                self.aversion_region = self.pos
+                self.count += 1
+
+                if self.count >= 5: 
+                    # add aversion region here 
+                    self.aversion_region = self.pos
+                    self.count = 0 
+
                 return b" "
 
             else: 
