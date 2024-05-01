@@ -2,9 +2,9 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-show_avg = True 
-show_diff = True 
-show_stdev = True
+show_avg = False 
+show_diff = False 
+show_stdev = False
 show_clean_up = True 
 
 # Directory containing the folders with CSV files
@@ -195,11 +195,16 @@ if show_clean_up:
     # Plotting the line chart for average number of 'num_cleaned' for each directory
     plt.figure(figsize=(10, 6))
     for folder, df in data.items():
-        plt.plot(df['Iteration'], df['Num Cleaned Avg'], label=folder)
+
+        if folder == 'bayes':  # Check if the folder is Bayes
+            plt.plot(df['Iteration'], df['Num Cleaned Avg'], label=folder, color='black')  # Set line color to black for Bayes folder
+        else:
+            plt.plot(df['Iteration'], df['Num Cleaned Avg'], label=folder)
 
     plt.xlabel('Iteration')
     plt.ylabel('Average Number of Cleaned Items')
-    plt.title('Average Number of Cleaned Items for Each Directory')
+    plt.title('Average Number of Cleaned Items')
+    plt.xlim(left=0, right=750)
     plt.legend()
     plt.grid(True)
     plt.show()

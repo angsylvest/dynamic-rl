@@ -108,7 +108,7 @@ class Agent(object):
                 self.accrued_debt = 0 
                 self.consume_reward = 1
 
-            self.agent_perf = {'num_collected': 0, 'time_waited': 0, 'num_cleaned': 0}
+            # self.agent_perf = {'num_collected': 0, 'time_waited': 0, 'num_cleaned': 0}
 
         return reward
 

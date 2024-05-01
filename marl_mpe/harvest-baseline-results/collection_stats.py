@@ -42,7 +42,7 @@ if show_avg:
 
     plt.xlabel('Iteration')
     plt.ylabel('Average Number of Collected Items')
-    plt.title('Average Number of Collected Items for Cleanup Env')
+    plt.title('Average Number of Collected Items for Harvest Env')
     plt.legend()
     plt.grid(True)
     plt.xlim(left=0, right=750)
