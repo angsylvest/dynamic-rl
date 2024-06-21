@@ -1,2 +1,0 @@
-Iteration,Custom Metrics
-1,"{'agent-0': {'num_collected': 0, 'time_waited': 1, 'num_cleaned': 0}, 'agent-1': {'num_collected': 0, 'time_waited': 1, 'num_cleaned': 1}, 'agent-2': {'num_collected': 0, 'time_waited': 1, 'num_cleaned': 0}, 'agent-3': {'num_collected': 0, 'time_waited': 1, 'num_cleaned': 0}, 'agent-4': {'num_collected': 0, 'time_waited': 1, 'num_cleaned': 0}}"
